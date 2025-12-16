@@ -80,7 +80,7 @@
   opacity: 0;
   transform: translateY(20px);
   animation: slideUp 0.8s ease-out 0.5s forwards;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 15px rgba(0, 0, 0, 0.3), 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes slideUp {
@@ -94,10 +94,17 @@
   font-size: 1.2rem;
   color: #FFFFFF;
   margin: 0;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   opacity: 0;
   transform: translateY(20px);
   animation: slideUp 0.8s ease-out 0.8s forwards;
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 1px 5px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .loading-dots {
