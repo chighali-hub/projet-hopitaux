@@ -1,0 +1,323 @@
+import { useState } from 'react'
+import pharmacyLogo from '../assets/pharmacy-logo.svg'
+import { api } from '../utils/api'
+import './PharmacyRegisterForm.css'
+
+function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuccess }) {
+  const [formData, setFormData] = useState({
+    nom: '',
+    username: '',
+    email: '',
+    telephone: '',
+    password: '',
+    confirmPassword: ''
+  })
+
+  const [errors, setErrors] = useState({
+    nom: '',
+    username: '',
+    email: '',
+    telephone: '',
+    password: '',
+    confirmPassword: '',
+    general: ''
+  })
+  const [loading, setLoading] = useState(false)
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+    
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }))
+    }
+  }
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const validatePhone = (phone) => {
+    const phoneRegex = /^[0-9+\-\s()]+$/
+    return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 8
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    let hasErrors = false
+    const newErrors = {
+      nom: '',
+      username: '',
+      email: '',
+      telephone: '',
+      password: '',
+      confirmPassword: '',
+      general: ''
+    }
+
+    if (!formData.nom.trim()) {
+      newErrors.nom = 'Le nom est requis'
+      hasErrors = true
+    }
+
+    if (!formData.username.trim()) {
+      newErrors.username = 'Le nom d\'utilisateur est requis'
+      hasErrors = true
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'L\'adresse e-mail est requise'
+      hasErrors = true
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'Veuillez entrer une adresse e-mail valide'
+      hasErrors = true
+    }
+
+    if (!formData.telephone.trim()) {
+      newErrors.telephone = 'Le numéro de téléphone est requis'
+      hasErrors = true
+    } else if (!validatePhone(formData.telephone)) {
+      newErrors.telephone = 'Veuillez entrer un numéro de téléphone valide'
+      hasErrors = true
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = 'Le mot de passe est requis'
+      hasErrors = true
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Le mot de passe doit contenir au moins 6 caractères'
+      hasErrors = true
+    }
+
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = 'La confirmation du mot de passe est requise'
+      hasErrors = true
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas'
+      hasErrors = true
+    }
+
+    if (hasErrors) {
+      setErrors(newErrors)
+      return
+    }
+
+    // API call
+    setLoading(true)
+    setErrors({ ...newErrors, general: '' })
+    
+    try {
+      const response = await api.registerPharmacy({
+        nom: formData.nom,
+        username: formData.username,
+        email: formData.email,
+        telephone: formData.telephone,
+        password: formData.password
+      })
+      
+      // Success - redirect to login
+      if (onRegisterSuccess) {
+        onRegisterSuccess(response)
+      } else {
+        // Redirect to login page
+        onNavigateToLogin()
+      }
+    } catch (err) {
+      // Gérer les erreurs de validation du serializer
+      let errorMessage = err.message || 'Erreur lors de l\'inscription'
+      const fieldErrors = { ...newErrors }
+      
+      // Si l'erreur contient des détails (erreurs de validation du serializer)
+      if (err.response) {
+        // Si l'erreur contient un objet 'errors' avec les erreurs par champ
+        if (err.response.errors && typeof err.response.errors === 'object') {
+          Object.keys(err.response.errors).forEach(field => {
+            if (fieldErrors.hasOwnProperty(field)) {
+              const fieldError = err.response.errors[field]
+              fieldErrors[field] = Array.isArray(fieldError) 
+                ? fieldError[0] 
+                : String(fieldError)
+            }
+          })
+          errorMessage = err.response.error || 'Veuillez corriger les erreurs ci-dessus'
+        } 
+        // Si l'erreur est directement un objet avec les champs (format serializer.errors)
+        else if (typeof err.response === 'object' && !err.response.error && !err.response.message) {
+          Object.keys(err.response).forEach(field => {
+            if (fieldErrors.hasOwnProperty(field)) {
+              const fieldError = err.response[field]
+              fieldErrors[field] = Array.isArray(fieldError) 
+                ? fieldError[0] 
+                : String(fieldError)
+            }
+          })
+          errorMessage = 'Veuillez corriger les erreurs ci-dessus'
+        }
+        // Format avec error/message (comme ClientRegisterView)
+        else {
+          // Extraire les erreurs par champ si elles existent
+          Object.keys(err.response).forEach(field => {
+            if (field !== 'error' && field !== 'message' && fieldErrors.hasOwnProperty(field)) {
+              const fieldError = err.response[field]
+              fieldErrors[field] = Array.isArray(fieldError) 
+                ? fieldError[0] 
+                : String(fieldError)
+            }
+          })
+          errorMessage = err.response.error || err.response.message || errorMessage
+        }
+      }
+      
+      setErrors({
+        ...fieldErrors,
+        general: errorMessage
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="register-container">
+      <button className="back-button" onClick={onBackToChoose} aria-label="Retour">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <div className="register-card">
+        <div className="register-header">
+          <div className="register-icon">
+            <img src={pharmacyLogo} alt="Logo Pharmacie" className="logo-image-small" />
+          </div>
+          <h1>Créer un compte Pharmacie</h1>
+          <p>Rejoignez notre plateforme</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="register-form">
+          <div className="form-group">
+            <label htmlFor="nom">Nom de la pharmacie</label>
+            <input
+              type="text"
+              id="nom"
+              name="nom"
+              value={formData.nom}
+              onChange={handleChange}
+              placeholder="Entrez le nom de votre pharmacie"
+              className={errors.nom ? 'input-error' : ''}
+            />
+            {errors.nom && <span className="error-message">{errors.nom}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Entrez votre username"
+              className={errors.username ? 'input-error' : ''}
+            />
+            {errors.username && <span className="error-message">{errors.username}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="email">Adresse e-mail</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Entrez votre adresse e-mail"
+              className={errors.email ? 'input-error' : ''}
+            />
+            {errors.email && <span className="error-message">{errors.email}</span>}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="telephone">Téléphone</label>
+            <input
+              type="tel"
+              id="telephone"
+              name="telephone"
+              value={formData.telephone}
+              onChange={handleChange}
+              placeholder="Entrez votre numéro de téléphone"
+              className={errors.telephone ? 'input-error' : ''}
+            />
+            {errors.telephone && <span className="error-message">{errors.telephone}</span>}
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="password">Mot de passe</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Entrez votre mot de passe"
+                className={errors.password ? 'input-error' : ''}
+              />
+              {errors.password && <span className="error-message">{errors.password}</span>}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirmation du mot de passe</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirmez votre mot de passe"
+                className={errors.confirmPassword ? 'input-error' : ''}
+              />
+              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+            </div>
+          </div>
+
+          {errors.general && (
+            <div className="error-message general-error">
+              {errors.general}
+            </div>
+          )}
+
+          <button type="submit" className="submit-button" disabled={loading}>
+            {loading ? 'Création du compte...' : 'Créer le compte'}
+          </button>
+
+          <div className="info-message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#87CEEB" strokeWidth="2" className="info-icon">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4 M12 8h.01" />
+            </svg>
+            <p>
+              Pour une utilisation optimale du site, veuillez fournir une adresse e-mail valide.
+              Des notifications importantes vous seront envoyées par e-mail.
+            </p>
+          </div>
+
+          <div className="login-link-container">
+            <a href="#" onClick={(e) => { e.preventDefault(); onNavigateToLogin(); }} className="login-link">
+              Vous avez déjà un compte? Connectez-vous ici
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default PharmacyRegisterForm

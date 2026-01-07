@@ -29,9 +29,9 @@ class Pharmacie(models.Model):
     )
     nom = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
-    localisation = models.CharField(max_length=150)
+    localisation = models.CharField(max_length=150, blank=True, default='')
     telephone = models.CharField(max_length=20)
-    photo_profile = models.CharField(max_length=255) 
+    photo_profile = models.ImageField(upload_to='pharmacy_profiles/', null=True, blank=True) 
     is_open = models.BooleanField(default=True)
 
 

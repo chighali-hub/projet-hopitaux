@@ -1,17 +1,21 @@
 import { useState } from 'react'
 import pharmacyLogo from '../assets/pharmacy-logo.svg'
+import { api } from '../utils/api'
 import './LoginForm.css'
 
-function LoginForm() {
+function LoginForm({ onBackToChoose, onLoginSuccess }) {
   const [formData, setFormData] = useState({
     username: '',
-    email: ''
+    password: ''
   })
 
   const [errors, setErrors] = useState({
     username: '',
-    email: ''
+    password: '',
+    general: ''
   })
+  
+  const [loading, setLoading] = useState(false)
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -29,18 +33,14 @@ function LoginForm() {
     }
   }
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
     let hasErrors = false
     const newErrors = {
       username: '',
-      email: ''
+      password: '',
+      general: ''
     }
 
     // Validation username
@@ -49,12 +49,9 @@ function LoginForm() {
       hasErrors = true
     }
 
-    // Validation email
-    if (!formData.email.trim()) {
-      newErrors.email = 'L\'adresse e-mail est requise'
-      hasErrors = true
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Veuillez entrer une adresse e-mail valide'
+    // Validation password
+    if (!formData.password.trim()) {
+      newErrors.password = 'Le mot de passe est requis'
       hasErrors = true
     }
 
@@ -63,13 +60,45 @@ function LoginForm() {
       return
     }
 
-    // Ici vous pouvez ajouter la logique de soumission
-    console.log('Formulaire soumis:', formData)
-    alert('Connexion réussie! (Cette fonctionnalité sera implémentée plus tard)')
+    // API call
+    setLoading(true)
+    setErrors({ username: '', password: '', general: '' })
+    
+    try {
+      const response = await api.login(formData.username, formData.password)
+      
+      // Store session data
+      const sessionData = {
+        user_id: response.user_id || response.pharmacie_id || response.client_id,
+        username: response.username,
+        role: response.role,
+        id_pharmacie: response.pharmacie_id,
+        nom: response.nom,
+        email: response.email,
+        has_location: response.has_location
+      }
+      
+      // Call success handler with session data
+      if (onLoginSuccess) {
+        onLoginSuccess(sessionData)
+      }
+    } catch (err) {
+      setErrors({
+        username: '',
+        password: '',
+        general: err.message || 'Identifiants invalides'
+      })
+      setLoading(false)
+    }
   }
 
   return (
     <div className="login-container">
+      <button className="back-button" onClick={onBackToChoose} aria-label="Retour">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+      </button>
       <div className="login-card">
         <div className="login-header">
           <div className="login-icon">
@@ -81,52 +110,46 @@ function LoginForm() {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="username">Nom d'utilisateur</label>
+            <label htmlFor="username">Username</label>
             <input
               type="text"
               id="username"
               name="username"
               value={formData.username}
               onChange={handleChange}
-              placeholder="Entrez votre nom d'utilisateur"
+              placeholder="entrez votre username"
               className={errors.username ? 'input-error' : ''}
             />
             {errors.username && <span className="error-message">{errors.username}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Adresse e-mail</label>
+            <label htmlFor="password">Mot de passe</label>
             <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
               onChange={handleChange}
-              placeholder="Entrez votre adresse e-mail"
-              className={errors.email ? 'input-error' : ''}
+              placeholder="Entrez votre mot de passe"
+              className={errors.password ? 'input-error' : ''}
             />
-            {errors.email && <span className="error-message">{errors.email}</span>}
+            {errors.password && <span className="error-message">{errors.password}</span>}
           </div>
 
-          <button type="submit" className="submit-button">
-            Se connecter
+          {errors.general && (
+            <div className="error-message general-error">
+              {errors.general}
+            </div>
+          )}
+
+          <button type="submit" className="submit-button" disabled={loading}>
+            {loading ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
-
-        <div className="info-message">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#87CEEB" strokeWidth="2" className="info-icon">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 16v-4 M12 8h.01" />
-          </svg>
-          <p>
-            Pour une utilisation optimale du site, veuillez fournir une adresse e-mail valide.
-            Des notifications importantes vous seront envoyées par e-mail.
-          </p>
-        </div>
       </div>
     </div>
   )
 }
 
 export default LoginForm
-

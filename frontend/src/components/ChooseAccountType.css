@@ -1,0 +1,426 @@
+.choose-account-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #E0F6FF 0%, #FFFFFF 50%, #E0F6FF 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  animation: fadeIn 0.6s ease-in;
+  position: relative;
+  overflow: hidden;
+}
+
+.back-button {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #87CEEB;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(135, 206, 235, 0.3);
+  color: #87CEEB;
+}
+
+.back-button:hover {
+  background: #87CEEB;
+  color: #FFFFFF;
+  transform: translateX(-5px) scale(1.1);
+  box-shadow: 0 6px 20px rgba(135, 206, 235, 0.4);
+}
+
+.back-button:active {
+  transform: translateX(-3px) scale(1.05);
+}
+
+.back-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.choose-account-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(135, 206, 235, 0.1) 0%, transparent 70%);
+  animation: rotateBackground 20s linear infinite;
+}
+
+@keyframes rotateBackground {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.choose-account-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 900px;
+  animation: slideUp 0.8s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.account-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.account-logo {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1.5rem;
+  animation: scaleIn 0.8s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.logo-image-account {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 20px rgba(135, 206, 235, 0.4));
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.account-title {
+  color: #87CEEB;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  text-shadow: 0 2px 10px rgba(135, 206, 235, 0.3);
+  animation: titleFadeIn 1s ease-out 0.3s both;
+}
+
+@keyframes titleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.account-subtitle {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+  animation: subtitleFadeIn 1s ease-out 0.5s both;
+}
+
+@keyframes subtitleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.buttons-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.account-button {
+  background: #FFFFFF;
+  border: 3px solid #E0F6FF;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(135, 206, 235, 0.15);
+  animation: buttonFadeIn 0.8s ease-out both;
+}
+
+.account-button:nth-child(1) {
+  animation-delay: 0.6s;
+}
+
+.account-button:nth-child(2) {
+  animation-delay: 0.8s;
+}
+
+@keyframes buttonFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.account-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(135, 206, 235, 0.1), transparent);
+  transition: left 0.6s ease;
+}
+
+.account-button:hover::before {
+  left: 100%;
+}
+
+.account-button:hover {
+  transform: translateY(-10px) scale(1.02);
+  border-color: #87CEEB;
+  box-shadow: 0 20px 50px rgba(135, 206, 235, 0.3);
+}
+
+.account-button:active {
+  transform: translateY(-5px) scale(1);
+}
+
+.button-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #87CEEB 0%, #6BB6FF 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  transition: all 0.4s ease;
+  box-shadow: 0 8px 20px rgba(135, 206, 235, 0.3);
+}
+
+.account-button:hover .button-icon {
+  transform: rotate(10deg) scale(1.1);
+  box-shadow: 0 12px 30px rgba(135, 206, 235, 0.4);
+}
+
+.button-icon svg {
+  width: 40px;
+  height: 40px;
+}
+
+.button-content h3 {
+  color: #87CEEB;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  transition: color 0.3s ease;
+}
+
+.account-button:hover .button-content h3 {
+  color: #6BB6FF;
+}
+
+.button-content p {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.button-arrow {
+  width: 40px;
+  height: 40px;
+  background: #E0F6FF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #87CEEB;
+  transition: all 0.4s ease;
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+.account-button:hover .button-arrow {
+  opacity: 1;
+  transform: translateX(0);
+  background: #87CEEB;
+  color: #FFFFFF;
+}
+
+.button-arrow svg {
+  width: 20px;
+  height: 20px;
+}
+
+.client-button.hovered {
+  border-color: #87CEEB;
+  background: linear-gradient(135deg, rgba(135, 206, 235, 0.05) 0%, rgba(224, 246, 255, 0.1) 100%);
+}
+
+.pharmacy-button.hovered {
+  border-color: #87CEEB;
+  background: linear-gradient(135deg, rgba(135, 206, 235, 0.05) 0%, rgba(224, 246, 255, 0.1) 100%);
+}
+
+@media (max-width: 768px) {
+  .choose-account-container {
+    padding: 1.5rem;
+  }
+
+  .account-logo {
+    width: 90px;
+    height: 90px;
+    margin-bottom: 1rem;
+  }
+
+  .account-title {
+    font-size: 2rem;
+  }
+
+  .account-subtitle {
+    font-size: 1rem;
+  }
+
+  .buttons-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .account-button {
+    padding: 2rem 1.5rem;
+  }
+
+  .button-icon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .button-icon svg {
+    width: 35px;
+    height: 35px;
+  }
+
+  .button-content h3 {
+    font-size: 1.5rem;
+  }
+
+  .button-content p {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .choose-account-container {
+    padding: 1rem;
+  }
+
+  .back-button {
+    top: 1rem;
+    left: 1rem;
+    width: 45px;
+    height: 45px;
+  }
+
+  .back-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .account-header {
+    margin-bottom: 2rem;
+  }
+
+  .account-logo {
+    width: 70px;
+    height: 70px;
+  }
+
+  .account-title {
+    font-size: 1.75rem;
+  }
+
+  .account-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .account-button {
+    padding: 1.5rem 1rem;
+    gap: 1rem;
+  }
+
+  .button-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .button-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+
+  .button-content h3 {
+    font-size: 1.25rem;
+  }
+
+  .button-content p {
+    font-size: 0.85rem;
+  }
+}
+
