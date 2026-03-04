@@ -1,0 +1,41 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond circulaire -->
+  <circle cx="100" cy="100" r="90" fill="#87CEEB" opacity="0.2"/>
+  
+  <!-- Cercle principal -->
+  <circle cx="100" cy="100" r="75" fill="none" stroke="#87CEEB" stroke-width="4"/>
+  
+  <!-- Croix médicale -->
+  <rect x="85" y="50" width="30" height="100" rx="5" fill="#FFFFFF"/>
+  <rect x="50" y="85" width="100" height="30" rx="5" fill="#FFFFFF"/>
+  
+  <!-- Pilule en haut à droite -->
+  <ellipse cx="140" cy="60" rx="15" ry="8" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="130" y1="60" x2="150" y2="60" stroke="#87CEEB" stroke-width="2"/>
+  
+  <!-- Pilule en bas à gauche -->
+  <ellipse cx="60" cy="140" rx="15" ry="8" fill="#FFFFFF" opacity="0.9"/>
+  <line x1="50" y1="140" x2="70" y2="140" stroke="#87CEEB" stroke-width="2"/>
+  
+  <!-- Étoile décorative -->
+  <path d="M100 30 L105 45 L120 45 L108 55 L113 70 L100 60 L87 70 L92 55 L80 45 L95 45 Z" fill="#FFFFFF" opacity="0.8"/>
+</svg>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
