@@ -295,6 +295,30 @@ class MedicamentViewSet(viewsets.ModelViewSet):
             stock.prix = prix
             stock.save()
         
+        # Check for pending notification requests for this medicine name
+        # Create notifications for clients who requested to be notified
+        from .models import MedicineNotificationRequest, MedicineNotification, Client
+        notification_requests = MedicineNotificationRequest.objects.filter(
+            medicine_name__icontains=medicament_nom,
+            is_active=True
+        )
+        
+        for req in notification_requests:
+            # Check if notification already exists (avoid duplicates)
+            if not MedicineNotification.objects.filter(
+                client=req.client,
+                medicine_name__icontains=medicament_nom,
+                pharmacie=pharmacie,
+                medicament=medicament
+            ).exists():
+                MedicineNotification.objects.create(
+                    client=req.client,
+                    medicine_name=medicament_nom,
+                    pharmacie=pharmacie,
+                    medicament=medicament,
+                    stock=stock
+                )
+        
         # Ensure session is saved before returning response
         if hasattr(request, 'session') and request.session.modified:
             request.session.save()
@@ -397,17 +421,30 @@ class MedicamentViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Pharmacie non trouvée'}, status=status.HTTP_404_NOT_FOUND)
 
 class StockViewSet(viewsets.ModelViewSet):
-    queryset = Stock.objects.all()
+    queryset = Stock.objects.select_related('pharmacie', 'medicament').all()
     serializer_class = StockSerializer
-    permission_classes = [IsAuthenticated]
-    
+    # Public read access is allowed for searching available medicines,
+    # write operations still require authentication.
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
     def get_queryset(self):
-        """Filter stocks by current pharmacy"""
-        try:
-            pharmacie = Pharmacie.objects.get(user=self.request.user)
-            return Stock.objects.filter(pharmacie=pharmacie)
-        except Pharmacie.DoesNotExist:
-            return Stock.objects.none()
+        """
+        Public stock listing for search:
+        - Optional filter by medicine name: ?medicament__nom__icontains=paracetamol
+        - Only returns stocks with positive quantity.
+        """
+        queryset = Stock.objects.select_related('pharmacie', 'medicament').all()
+
+        # Filter by medicine name (compatible with the planned frontend query param)
+        search = self.request.query_params.get('medicament__nom__icontains')
+        if search:
+            queryset = queryset.filter(medicament__nom__icontains=search)
+
+        # Only keep items that are in stock
+        queryset = queryset.filter(quantite__gt=0)
+
+        return queryset
 
 class ClientViewSet(viewsets.ModelViewSet):
     queryset = Client.objects.all()
@@ -1026,3 +1063,193 @@ class LocationUpdateView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class MedicineNotificationRequestView(APIView):
+    """
+    View to create a notification request when client searches for a medicine and finds nothing
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
+    def post(self, request):
+        """Create a notification request for a medicine"""
+        # Get user from session
+        user_id = request.session.get('user_id')
+        if not user_id:
+            return Response(
+                {'error': 'Non authentifié'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        try:
+            user = User.objects.get(id=user_id)
+            if user.role != 'client':
+                return Response(
+                    {'error': 'Seuls les clients peuvent créer des demandes de notification'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            client = Client.objects.get(user=user)
+        except (User.DoesNotExist, Client.DoesNotExist):
+            return Response(
+                {'error': 'Client non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        medicine_name = request.data.get('medicine_name', '').strip()
+        if not medicine_name:
+            return Response(
+                {'error': 'Le nom du médicament est requis'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create or get existing request
+        request_obj, created = MedicineNotificationRequest.objects.get_or_create(
+            client=client,
+            medicine_name=medicine_name,
+            defaults={'is_active': True}
+        )
+        
+        if not created:
+            # Reactivate if it was deactivated
+            if not request_obj.is_active:
+                request_obj.is_active = True
+                request_obj.save()
+        
+        from .serializers import MedicineNotificationRequestSerializer
+        serializer = MedicineNotificationRequestSerializer(request_obj)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class MedicineNotificationListView(APIView):
+    """
+    View to get notifications for the current client
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
+    def get(self, request):
+        """Get all notifications for the current client"""
+        # Get user from session
+        user_id = request.session.get('user_id')
+        if not user_id:
+            return Response(
+                {'error': 'Non authentifié'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        try:
+            user = User.objects.get(id=user_id)
+            if user.role != 'client':
+                return Response(
+                    {'error': 'Seuls les clients peuvent voir leurs notifications'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            client = Client.objects.get(user=user)
+        except (User.DoesNotExist, Client.DoesNotExist):
+            return Response(
+                {'error': 'Client non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        notifications = MedicineNotification.objects.filter(client=client).order_by('-created_at')
+        
+        # Check for unread count
+        unread_count = notifications.filter(is_read=False).count()
+        
+        from .serializers import MedicineNotificationSerializer
+        serializer = MedicineNotificationSerializer(notifications, many=True)
+        
+        return Response({
+            'notifications': serializer.data,
+            'unread_count': unread_count
+        })
+
+class MedicineNotificationMarkReadView(APIView):
+    """
+    View to mark a notification as read
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
+    def patch(self, request, notification_id):
+        """Mark a notification as read"""
+        # Get user from session
+        user_id = request.session.get('user_id')
+        if not user_id:
+            return Response(
+                {'error': 'Non authentifié'}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        try:
+            user = User.objects.get(id=user_id)
+            client = Client.objects.get(user=user)
+            notification = MedicineNotification.objects.get(id=notification_id, client=client)
+            notification.is_read = True
+            notification.save()
+            return Response({'message': 'Notification marquée comme lue'})
+        except (User.DoesNotExist, Client.DoesNotExist, MedicineNotification.DoesNotExist):
+            return Response(
+                {'error': 'Notification non trouvée'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class PharmacyNotificationRequestsView(APIView):
+    """
+    View to get all medicine notification requests for pharmacies
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
+    def get(self, request):
+        """Get all active medicine notification requests grouped by medicine name"""
+        # Load user from session
+        user, error_response = get_user_from_session(request)
+        if error_response:
+            return error_response
+        
+        try:
+            pharmacie = Pharmacie.objects.get(user=user)
+        except Pharmacie.DoesNotExist:
+            return Response({'error': 'Pharmacie non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all active notification requests and group by medicine_name
+        from django.db.models import Count
+        from collections import OrderedDict
+        
+        notification_requests = MedicineNotificationRequest.objects.filter(
+            is_active=True
+        ).values('medicine_name').annotate(
+            request_count=Count('id')
+        ).order_by('-request_count', 'medicine_name')
+        
+        # Format the response
+        medicines_data = []
+        for item in notification_requests:
+            medicines_data.append({
+                'medicine_name': item['medicine_name'],
+                'request_count': item['request_count']
+            })
+        
+        return Response({
+            'medicines': medicines_data,
+            'total_medicines': len(medicines_data),
+            'total_requests': sum(item['request_count'] for item in medicines_data)
+        })

@@ -21,4 +21,10 @@ urlpatterns = router.urls + [
     
     # Location endpoint
     path('location/update/', LocationUpdateView.as_view(), name='location-update'),
+    
+    # Medicine notification endpoints
+    path('notifications/request/', MedicineNotificationRequestView.as_view(), name='notification-request'),
+    path('notifications/', MedicineNotificationListView.as_view(), name='notifications-list'),
+    path('notifications/<int:notification_id>/read/', MedicineNotificationMarkReadView.as_view(), name='notification-mark-read'),
+    path('notifications/requests/', PharmacyNotificationRequestsView.as_view(), name='pharmacy-notification-requests'),
 ]

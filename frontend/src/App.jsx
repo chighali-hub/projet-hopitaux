@@ -6,7 +6,7 @@ import ClientRegisterForm from './components/ClientRegisterForm'
 import PharmacyRegisterForm from './components/PharmacyRegisterForm'
 import LocationPage from './components/LocationPage'
 import PagePharmacie from './components/PagePharmacie'
-import TestClient from './components/TestClient'
+import ClientSearchPage from './components/ClientSearchPage'
 import { api } from './utils/api'
 import './App.css'
 
@@ -44,7 +44,7 @@ function App() {
           setCurrentPage('location')
         }
       } else if (data.role === 'client') {
-        setCurrentPage('testclient')
+        setCurrentPage('client-search')
       } else {
         // Unknown role, go to home
         setSessionData(null)
@@ -97,7 +97,7 @@ function App() {
         setCurrentPage('location')
       }
     } else if (data.role === 'client') {
-      setCurrentPage('testclient')
+      setCurrentPage('client-search')
     }
   }
 
@@ -247,9 +247,8 @@ function App() {
           onLogout={handleLogout}
         />
       )}
-      {/* TestClient page ONLY accessible if session is valid and role is client */}
-      {currentPage === 'testclient' && sessionData && sessionData.role === 'client' && (
-        <TestClient sessionData={sessionData} onLogout={handleLogout} />
+      {currentPage === 'client-search' && sessionData && sessionData.role === 'client' && (
+        <ClientSearchPage onLogout={handleLogout} />
       )}
       {/* Fallback: if trying to access protected page without session, redirect to home */}
       {(currentPage === 'location' || currentPage === 'pharmacy' || currentPage === 'testclient') && !sessionData && (

@@ -130,3 +130,55 @@ class CommandeMedicament(models.Model):
 
     def __str__(self):
         return f"{self.medicament.nom} x {self.quantite}"
+
+# =========================
+# Medicine Notification Request (client requests to be notified)
+# =========================
+class MedicineNotificationRequest(models.Model):
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name="notification_requests"
+    )
+    medicine_name = models.CharField(max_length=200)  # Name searched by client
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)  # Can be deactivated if client unsubscribes
+    
+    class Meta:
+        unique_together = ('client', 'medicine_name')
+    
+    def __str__(self):
+        return f"{self.client.user.username} - {self.medicine_name}"
+
+# =========================
+# Medicine Notification (created when medicine becomes available)
+# =========================
+class MedicineNotification(models.Model):
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
+    medicine_name = models.CharField(max_length=200)
+    pharmacie = models.ForeignKey(
+        Pharmacie,
+        on_delete=models.CASCADE,
+        related_name="notifications"
+    )
+    medicament = models.ForeignKey(
+        Medicament,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    stock = models.ForeignKey(
+        Stock,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"Notification: {self.medicine_name} disponible à {self.pharmacie.nom}"
