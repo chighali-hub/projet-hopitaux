@@ -20,7 +20,7 @@ async function apiRequest(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config)
-    
+
     // Handle non-JSON responses
     let data
     const contentType = response.headers.get('content-type')
@@ -29,21 +29,21 @@ async function apiRequest(endpoint, options = {}) {
     } else {
       data = { error: `Erreur ${response.status}: ${response.statusText}` }
     }
-    
+
     if (!response.ok) {
       // Include status code in error message for better debugging
-      const statusText = response.status === 401 ? 'Non authentifié' 
-        : response.status === 403 ? 'Accès refusé' 
-        : response.status === 404 ? 'Ressource non trouvée'
-        : `Erreur ${response.status}`
-      
+      const statusText = response.status === 401 ? 'Non authentifié'
+        : response.status === 403 ? 'Accès refusé'
+          : response.status === 404 ? 'Ressource non trouvée'
+            : `Erreur ${response.status}`
+
       // Créer une erreur avec les détails complets pour les erreurs de validation
       const error = new Error(data.error || data.message || statusText)
       error.response = data  // Préserver les détails de la réponse (erreurs de validation)
       error.status = response.status
       throw error
     }
-    
+
     return data
   } catch (error) {
     // Re-throw with better error message
@@ -61,21 +61,21 @@ export const api = {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  
+
   registerClient: (data) => apiRequest('/register/client/', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  
+
   login: (username, password) => apiRequest('/login/', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
   }),
-  
+
   logout: () => apiRequest('/logout/', {
     method: 'POST',
   }),
-  
+
   getSession: async () => {
     try {
       return await apiRequest('/session/')
@@ -87,7 +87,7 @@ export const api = {
       throw error
     }
   },
-  
+
   // Location
   updateLocation: async (latitude, longitude) => {
     console.log('🌐 Appel API updateLocation:', { latitude, longitude })
@@ -105,10 +105,10 @@ export const api = {
       throw new Error(errorMessage)
     }
   },
-  
+
   // Pharmacy
   getMyPharmacy: () => apiRequest('/pharmacies/my_pharmacy/'),
-  
+
   updatePharmacyPhoto: (pharmacieId, photoFile) => {
     const formData = new FormData()
     formData.append('photo_profile', photoFile)
@@ -118,39 +118,65 @@ export const api = {
       credentials: 'include',
     }).then(res => res.json())
   },
-  
+
   updatePharmacyOpenStatus: (isOpen) => apiRequest('/pharmacies/set_open_status/', {
     method: 'PATCH',
     body: JSON.stringify({ is_open: isOpen }),
   }),
-  
+
   // Medicines
   getMedicines: (params = {}) => {
     const queryString = new URLSearchParams(params).toString()
     return apiRequest(`/medicaments/${queryString ? '?' + queryString : ''}`)
   },
-  
+
   getMyStock: () => apiRequest('/medicaments/my_stock/'),
-  
+
   createMedicine: (data) => apiRequest('/medicaments/', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  
+
   updateMedicine: (id, data) => apiRequest(`/medicaments/${id}/`, {
     method: 'PATCH',
     body: JSON.stringify(data),
   }),
-  
+
   deleteMedicine: (id) => apiRequest(`/medicaments/${id}/`, {
     method: 'DELETE',
   }),
-  
+
   searchMedicines: (search, categorie = null) => {
     const params = { search }
     if (categorie) params.categorie = categorie
     return api.getMedicines(params)
   },
+
+  // Medicine Notifications
+  createNotificationRequest: (medicineName) => apiRequest('/notifications/request/', {
+    method: 'POST',
+    body: JSON.stringify({ medicine_name: medicineName }),
+  }),
+
+  getNotifications: () => apiRequest('/notifications/'),
+
+  markNotificationRead: (notificationId) => apiRequest(`/notifications/${notificationId}/read/`, {
+    method: 'PATCH',
+  }),
+
+  // Pharmacy notification requests
+  getPharmacyNotificationRequests: () => apiRequest('/notifications/requests/'),
+
+  // Orders
+  getPharmacyOrders: () => apiRequest('/commandes/pharmacy_orders/'),
+  
+  createOrder: (pharmacieId, medicaments) => apiRequest('/commandes/', {
+    method: 'POST',
+    body: JSON.stringify({
+      pharmacie_id: pharmacieId,
+      medicaments: medicaments
+    }),
+  }),
 }
 
 
