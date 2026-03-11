@@ -253,3 +253,5 @@ if request.session.get('role') == 'pharmacien':
 
 
 
+
+
