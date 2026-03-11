@@ -431,17 +431,21 @@ class StockViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Public stock listing for search:
-        - Optional filter by medicine name: ?medicament__nom__icontains=paracetamol
+        - Filter by medicine name (supports both ?medicament__nom__icontains= and ?search=).
         - Only returns stocks with positive quantity.
         """
         queryset = Stock.objects.select_related('pharmacie', 'medicament').all()
 
-        # Filter by medicine name (compatible with the planned frontend query param)
-        search = self.request.query_params.get('medicament__nom__icontains')
-        if search:
-            queryset = queryset.filter(medicament__nom__icontains=search)
+        # Accept both the explicit ORM-style param used in the frontend
+        # and a generic ?search= param (for backwards/defensive compatibility).
+        search_param = self.request.query_params.get('medicament__nom__icontains')
+        if not search_param:
+            search_param = self.request.query_params.get('search')
 
-        # Only keep items that are in stock
+        if search_param:
+            queryset = queryset.filter(medicament__nom__icontains=search_param.strip())
+
+        # Only keep items that are actually in stock
         queryset = queryset.filter(quantite__gt=0)
 
         return queryset

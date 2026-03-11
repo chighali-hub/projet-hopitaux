@@ -6,7 +6,7 @@
 }
 
 .client-search-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #87ceeb 0%, #4fc3f7 100%);
   color: white;
   padding: 32px 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -742,6 +742,79 @@
   .pharmacy-list {
     grid-template-columns: 1fr;
   }
+}
+
+/* Modal de confirmation de déconnexion (client) */
+
+.logout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+}
+
+.logout-modal {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px 26px 22px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
+  text-align: center;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.logout-modal h3 {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
+.logout-modal p {
+  margin: 0 0 22px;
+  font-size: 0.98rem;
+  color: #4b5563;
+}
+
+.logout-modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.logout-modal-buttons button {
+  padding: 9px 20px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.cancel-button {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.cancel-button:hover {
+  background: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.confirm-logout {
+  background: linear-gradient(135deg, #f97373 0%, #ef4444 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.45);
+}
+
+.confirm-logout:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(248, 113, 113, 0.6);
 }
 
 
