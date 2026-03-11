@@ -43,11 +43,26 @@ class StockSerializer(serializers.ModelSerializer):
     medicament_nom = serializers.CharField(source='medicament.nom', read_only=True)
     medicament_categorie = serializers.CharField(source='medicament.categorie', read_only=True)
     pharmacie_nom = serializers.CharField(source='pharmacie.nom', read_only=True)
+    pharmacie_telephone = serializers.CharField(source='pharmacie.telephone', read_only=True)
+    pharmacie_localisation = serializers.CharField(source='pharmacie.localisation', read_only=True)
+    pharmacie_is_open = serializers.BooleanField(source='pharmacie.is_open', read_only=True)
     medicament = MedicamentSerializer(read_only=True)
     
     class Meta:
         model = Stock
-        fields = ['id', 'pharmacie', 'medicament', 'quantite', 'prix', 'medicament_nom', 'medicament_categorie', 'pharmacie_nom']
+        fields = [
+            'id',
+            'pharmacie',
+            'medicament',
+            'quantite',
+            'prix',
+            'medicament_nom',
+            'medicament_categorie',
+            'pharmacie_nom',
+            'pharmacie_telephone',
+            'pharmacie_localisation',
+            'pharmacie_is_open',
+        ]
 
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
@@ -157,3 +172,39 @@ class ClientRegisterSerializer(serializers.Serializer):
         )
         
         return client
+
+## Medicine Notification Serializers
+
+class MedicineNotificationRequestSerializer(serializers.ModelSerializer):
+    client_nom = serializers.CharField(source='client.nom', read_only=True)
+    client_prenom = serializers.CharField(source='client.prenom', read_only=True)
+    client_email = serializers.CharField(source='client.email', read_only=True)
+    
+    class Meta:
+        model = MedicineNotificationRequest
+        fields = ['id', 'client', 'client_nom', 'client_prenom', 'client_email', 'medicine_name', 'created_at', 'is_active']
+        read_only_fields = ['id', 'client', 'created_at']
+
+class MedicineNotificationSerializer(serializers.ModelSerializer):
+    pharmacie_nom = serializers.CharField(source='pharmacie.nom', read_only=True)
+    pharmacie_telephone = serializers.CharField(source='pharmacie.telephone', read_only=True)
+    pharmacie_localisation = serializers.CharField(source='pharmacie.localisation', read_only=True)
+    medicament_nom = serializers.CharField(source='medicament.nom', read_only=True)
+    prix = serializers.FloatField(source='stock.prix', read_only=True)
+    quantite = serializers.IntegerField(source='stock.quantite', read_only=True)
+    
+    class Meta:
+        model = MedicineNotification
+        fields = [
+            'id',
+            'medicine_name',
+            'pharmacie_nom',
+            'pharmacie_telephone',
+            'pharmacie_localisation',
+            'medicament_nom',
+            'prix',
+            'quantite',
+            'created_at',
+            'is_read',
+        ]
+        read_only_fields = ['id', 'created_at']

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../utils/api'
+import { FaBell } from 'react-icons/fa'
+import PharmacyNotificationPanel from './PharmacyNotificationPanel'
 import './PagePharmacie.css'
 
 function PagePharmacie({ sessionData, onLogout }) {
@@ -13,6 +15,9 @@ function PagePharmacie({ sessionData, onLogout }) {
   const [editingMedicine, setEditingMedicine] = useState(null)
   const [pharmacyData, setPharmacyData] = useState(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [notificationRequests, setNotificationRequests] = useState([])
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false)
+  const [loadingRequests, setLoadingRequests] = useState(false)
 
   const [formData, setFormData] = useState({
     nom: '',
@@ -27,7 +32,22 @@ function PagePharmacie({ sessionData, onLogout }) {
   useEffect(() => {
     loadPharmacyData()
     loadMedicines()
+    loadNotificationRequests()
+    // Refresh notification requests every 30 seconds
+    const interval = setInterval(loadNotificationRequests, 30000)
+    return () => clearInterval(interval)
   }, [])
+
+  // Close notification panel when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showNotificationPanel && !event.target.closest('.notification-panel') && !event.target.closest('.notification-container')) {
+        setShowNotificationPanel(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showNotificationPanel])
 
   const loadPharmacyData = async () => {
     try {
@@ -35,6 +55,19 @@ function PagePharmacie({ sessionData, onLogout }) {
       setPharmacyData(data)
     } catch (err) {
       console.error('Error loading pharmacy data:', err)
+    }
+  }
+
+  const loadNotificationRequests = async () => {
+    setLoadingRequests(true)
+    try {
+      const data = await api.getPharmacyNotificationRequests()
+      setNotificationRequests(data.medicines || [])
+    } catch (err) {
+      console.error('Error loading notification requests:', err)
+      setNotificationRequests([])
+    } finally {
+      setLoadingRequests(false)
     }
   }
 
@@ -123,7 +156,7 @@ function PagePharmacie({ sessionData, onLogout }) {
           prix: parseFloat(formData.prix)
         })
       }
-      
+
       setShowForm(false)
       setEditingMedicine(null)
       resetForm()
@@ -238,9 +271,9 @@ function PagePharmacie({ sessionData, onLogout }) {
           <div className="profile-photo-container">
             <label htmlFor="photo-upload" className="photo-upload-label">
               {pharmacyData?.photo_profile ? (
-                <img 
-                  src={pharmacyData.photo_profile} 
-                  alt="Profile" 
+                <img
+                  src={pharmacyData.photo_profile}
+                  alt="Profile"
                   className="profile-photo"
                   onError={(e) => {
                     console.error('Error loading profile image:', pharmacyData.photo_profile)
@@ -277,23 +310,35 @@ function PagePharmacie({ sessionData, onLogout }) {
           </div>
         </div>
         <div className="header-actions">
-          <button 
+          <div className="notification-container">
+            <button
+              className="notification-button"
+              onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+              title="Demandes de notification"
+            >
+              <FaBell />
+              {notificationRequests.length > 0 && (
+                <span className="notification-badge">{notificationRequests.length}</span>
+              )}
+            </button>
+          </div>
+          <button
             className={`open-status-button ${pharmacyData?.is_open ? 'open' : 'closed'}`}
             onClick={handleToggleOpenStatus}
           >
             {pharmacyData?.is_open ? 'Ouvert' : 'Fermé'}
           </button>
-          <button 
+          <button
             className="logout-button"
             onClick={() => setShowLogoutConfirm(true)}
           >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          Déconnexion
-        </button>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Déconnexion
+          </button>
         </div>
       </header>
 
@@ -331,7 +376,7 @@ function PagePharmacie({ sessionData, onLogout }) {
             <option value="Antihistaminique">Antihistaminique</option>
             <option value="Autre">Autre</option>
           </select>
-          <button 
+          <button
             className="add-button"
             onClick={() => {
               resetForm()
@@ -362,7 +407,7 @@ function PagePharmacie({ sessionData, onLogout }) {
                     <input
                       type="text"
                       value={formData.nom}
-                      onChange={(e) => setFormData({...formData, nom: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                       required
                     />
                   </div>
@@ -371,7 +416,7 @@ function PagePharmacie({ sessionData, onLogout }) {
                     <input
                       type="text"
                       value={formData.categorie}
-                      onChange={(e) => setFormData({...formData, categorie: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, categorie: e.target.value })}
                       required
                     />
                   </div>
@@ -380,7 +425,7 @@ function PagePharmacie({ sessionData, onLogout }) {
                     <input
                       type="text"
                       value={formData.forme}
-                      onChange={(e) => setFormData({...formData, forme: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, forme: e.target.value })}
                     />
                   </div>
                   <div className="form-group">
@@ -389,7 +434,7 @@ function PagePharmacie({ sessionData, onLogout }) {
                       type="number"
                       step="0.01"
                       value={formData.prix}
-                      onChange={(e) => setFormData({...formData, prix: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, prix: e.target.value })}
                       required
                     />
                   </div>
@@ -398,7 +443,7 @@ function PagePharmacie({ sessionData, onLogout }) {
                     <input
                       type="number"
                       value={formData.quantite}
-                      onChange={(e) => setFormData({...formData, quantite: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, quantite: e.target.value })}
                       required
                     />
                   </div>
@@ -407,7 +452,7 @@ function PagePharmacie({ sessionData, onLogout }) {
                     <input
                       type="date"
                       value={formData.date_expiration}
-                      onChange={(e) => setFormData({...formData, date_expiration: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, date_expiration: e.target.value })}
                     />
                   </div>
                 </div>
@@ -415,7 +460,7 @@ function PagePharmacie({ sessionData, onLogout }) {
                   <label>Description</label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows="3"
                   />
                 </div>
@@ -470,15 +515,15 @@ function PagePharmacie({ sessionData, onLogout }) {
                         <p><strong>Quantité:</strong> {stock.quantite !== undefined && stock.quantite !== null ? stock.quantite : 'N/A'}</p>
                       </div>
                       <div className="medicine-actions">
-                        <button 
-                          onClick={() => handleEdit(stock)} 
+                        <button
+                          onClick={() => handleEdit(stock)}
                           className="edit-button"
                           disabled={!stock || !stock.id}
                         >
                           Modifier
                         </button>
-                        <button 
-                          onClick={() => handleDelete(stock)} 
+                        <button
+                          onClick={() => handleDelete(stock)}
                           className="delete-button"
                           disabled={!stock || !medicamentId}
                         >
@@ -507,6 +552,14 @@ function PagePharmacie({ sessionData, onLogout }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Notification Panel for Medicine Requests */}
+      {showNotificationPanel && (
+        <PharmacyNotificationPanel
+          medicines={notificationRequests}
+          onClose={() => setShowNotificationPanel(false)}
+        />
       )}
     </div>
   )
