@@ -139,7 +139,14 @@ function PharmacyChatBot({ pharmacies, userLocation }) {
         return "Je n'ai pas de coordonnées pour calculer la pharmacie la plus proche."
       }
 
-      withDistance.sort((a, b) => a._distanceKm - b._distanceKm)
+     const sorted = withDistance.sort((a, b) => {
+  // Opened first
+  if (a.is_open && !b.is_open) return -1;
+  if (!a.is_open && b.is_open) return 1;
+
+  // If both same open status, sort by distance
+  return a._distanceKm - b._distanceKm;
+});
       const nearest = withDistance[0]
       const dist = nearest._distanceKm.toFixed(1)
       const status = nearest.is_open ? 'ouverte' : 'fermée'
@@ -236,7 +243,7 @@ function PharmacyChatBot({ pharmacies, userLocation }) {
     }
 
     // Closed pharmacies
-    if (normalized.includes('fermée') || normalized.includes('closed')) {
+    if (normalized.includes('fermee') || normalized.includes('closed')) {
       if (closedList.length === 0) {
         return '✅ Toutes les pharmacies trouvées sont ouvertes.'
       }

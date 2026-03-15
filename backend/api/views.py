@@ -213,7 +213,7 @@ class MedicamentViewSet(viewsets.ModelViewSet):
         # Search by name
         search = self.request.query_params.get('search', None)
         if search:
-            queryset = queryset.filter(nom__icontains=search)
+            queryset = queryset.filter(nom__istartswith=search)
         
         # Filter by category
         categorie = self.request.query_params.get('categorie', None)
@@ -436,11 +436,18 @@ class StockViewSet(viewsets.ModelViewSet):
         """
         queryset = Stock.objects.select_related('pharmacie', 'medicament').all()
 
+<<<<<<< HEAD
         # Accept both the explicit ORM-style param used in the frontend
         # and a generic ?search= param (for backwards/defensive compatibility).
         search_param = self.request.query_params.get('medicament__nom__icontains')
         if not search_param:
             search_param = self.request.query_params.get('search')
+=======
+        # Filter by medicine name (compatible with the planned frontend query param)
+        search = self.request.query_params.get('medicament__nom__istartswith')
+        if search:
+            queryset = queryset.filter(medicament__nom__istartswith=search)
+>>>>>>> 08d20fea050ccc5a449f89140b1ca5f191b5227c
 
         if search_param:
             queryset = queryset.filter(medicament__nom__icontains=search_param.strip())
@@ -487,52 +494,40 @@ class PharmacyRegisterView(APIView):
     
     def post(self, request):
         from .serializers import PharmacyRegisterSerializer
+        import random
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
         serializer = PharmacyRegisterSerializer(data=request.data)
         if serializer.is_valid():
-            pharmacie = serializer.save()
-            user = pharmacie.user
+            # Instead of saving immediately, generate OTP and save to PendingRegistration
+            otp = str(random.randint(100000, 999999))
+            email = request.data.get('email')
             
-            # CRITICAL STEP 1: Ensure session exists (create if not)
-            # Django requires a session to exist before login() can work
-            if not request.session.exists(request.session.session_key):
-                request.session.create()
+            # Store data in PendingRegistration
+            PendingRegistration.objects.update_or_create(
+                email=email,
+                defaults={
+                    'role': 'pharmacien',
+                    'registration_data': request.data,
+                    'otp': otp
+                }
+            )
             
-            # CRITICAL STEP 2: Login user to authenticate Django session
-            # This sets request.user.is_authenticated = True
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            
-            # CRITICAL STEP 3: Store additional session data
-            request.session['user_id'] = user.id
-            request.session['username'] = user.username
-            request.session['role'] = user.role
-            request.session['id_pharmacie'] = pharmacie.id
-            request.session['nom'] = pharmacie.nom
-            request.session['email'] = pharmacie.email
-            request.session['has_location'] = bool(pharmacie.localisation)
-            
-            # CRITICAL STEP 4: Force session to be marked as modified (ensures cookie is sent)
-            request.session.modified = True
-            request.session.save()
-            
-            # CRITICAL STEP 5: Verify authentication is working
-            # Verify that request.user is now authenticated
-            if not request.user.is_authenticated:
-                # Fallback: try login again if first attempt failed
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                request.session.save()
+            # Send OTP via email
+            send_mail(
+                'Votre code de vérification - monhopital.com',
+                f'Votre code de vérification est : {otp}',
+                getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@monhopital.com'),
+                [email],
+                fail_silently=False,
+            )
             
             return Response({
-                "message": "Pharmacie créée avec succès",
-                "pharmacie_id": pharmacie.id,
-                "user_id": user.id,
-                "role": "pharmacien",
-                "username": user.username,
-                "nom": pharmacie.nom,
-                "email": pharmacie.email,
-                "has_location": bool(pharmacie.localisation),
-                "authenticated": request.user.is_authenticated,
-                "session_key": request.session.session_key,
-            }, status=status.HTTP_201_CREATED)
+                "message": "Un code de vérification a été envoyé à votre adresse e-mail.",
+                "email": email,
+                "requires_otp": True
+            }, status=status.HTTP_200_OK)
         
         # Retourner les erreurs de validation de manière plus claire
         # DRF serializer.errors retourne un dict avec des listes d'erreurs
@@ -563,27 +558,46 @@ class ClientRegisterView(APIView):
     
     def post(self, request):
         from .serializers import ClientRegisterSerializer
+        import random
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
         serializer = ClientRegisterSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                client = serializer.save()
+                # Generate OTP and save to PendingRegistration
+                otp = str(random.randint(100000, 999999))
+                email = request.data.get('email')
+                
+                PendingRegistration.objects.update_or_create(
+                    email=email,
+                    defaults={
+                        'role': 'client',
+                        'registration_data': request.data,
+                        'otp': otp
+                    }
+                )
+                
+                # Send OTP via email
+                send_mail(
+                    'Votre code de vérification - monhopital.com',
+                    f'Votre code de vérification est : {otp}',
+                    getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@monhopital.com'),
+                    [email],
+                    fail_silently=False,
+                )
+                
                 return Response({
-                    "message": "Client créé avec succès",
-                    "client_id": client.id,
-                    "user_id": client.user.id,
-                    "username": client.user.username,
-                    "email": client.email
-                }, status=status.HTTP_201_CREATED)
+                    "message": "Un code de vérification a été envoyé à votre adresse e-mail.",
+                    "email": email,
+                    "requires_otp": True
+                }, status=status.HTTP_200_OK)
             except Exception as e:
                 # Gérer les erreurs lors de la création
                 return Response({
-                    "error": "Erreur lors de la création du compte",
+                    "error": "Erreur lors de la création de la demande",
                     "message": str(e)
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        # Retourner les erreurs de validation de manière plus claire
-        # DRF serializer.errors retourne un dict avec des listes d'erreurs
-        # On les transforme en format simple pour le frontend
-        errors = {}
         for field, field_errors in serializer.errors.items():
             if isinstance(field_errors, list):
                 # Prendre le premier message d'erreur
@@ -597,6 +611,105 @@ class ClientRegisterView(APIView):
             "error": "Erreur de validation",
             "message": "Veuillez corriger les erreurs ci-dessous",
             **errors  # Inclure les erreurs directement au niveau racine pour compatibilité
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyOTPView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+        
+    def post(self, request):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
+        
+        if not email or not otp:
+            return Response({'error': 'Email et code OTP requis'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            pending = PendingRegistration.objects.get(email=email, otp=otp)
+        except PendingRegistration.DoesNotExist:
+            return Response({'error': 'Code OTP invalide ou expiré'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Code is valid, proceed with actual registration
+        from .serializers import PharmacyRegisterSerializer, ClientRegisterSerializer
+        
+        if pending.role == 'pharmacien':
+            serializer = PharmacyRegisterSerializer(data=pending.registration_data)
+            if serializer.is_valid():
+                pharmacie = serializer.save()
+                user = pharmacie.user
+                
+                # Setup session
+                if not request.session.exists(request.session.session_key):
+                    request.session.create()
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                
+                request.session['user_id'] = user.id
+                request.session['username'] = user.username
+                request.session['role'] = user.role
+                request.session['id_pharmacie'] = pharmacie.id
+                request.session['nom'] = pharmacie.nom
+                request.session['email'] = pharmacie.email
+                request.session['has_location'] = bool(pharmacie.localisation)
+                
+                request.session.modified = True
+                request.session.save()
+                
+                if not request.user.is_authenticated:
+                    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                    request.session.save()
+                
+                pending.delete()
+                
+                return Response({
+                    "message": "Pharmacie créée avec succès",
+                    "pharmacie_id": pharmacie.id,
+                    "user_id": user.id,
+                    "role": "pharmacien",
+                    "username": user.username,
+                    "nom": pharmacie.nom,
+                    "email": pharmacie.email,
+                    "has_location": bool(pharmacie.localisation),
+                    "authenticated": request.user.is_authenticated,
+                    "session_key": request.session.session_key,
+                }, status=status.HTTP_201_CREATED)
+                
+        elif pending.role == 'client':
+            serializer = ClientRegisterSerializer(data=pending.registration_data)
+            if serializer.is_valid():
+                client = serializer.save()
+                user = client.user
+                
+                if not request.session.exists(request.session.session_key):
+                    request.session.create()
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                
+                request.session['user_id'] = user.id
+                request.session['username'] = user.username
+                request.session['role'] = user.role
+                request.session['id_client'] = client.id
+                
+                request.session.modified = True
+                request.session.save()
+                
+                pending.delete()
+                
+                return Response({
+                    "message": "Client créé avec succès",
+                    "client_id": client.id,
+                    "user_id": user.id,
+                    "role": "client",
+                    "username": user.username,
+                    "email": client.email
+                }, status=status.HTTP_201_CREATED)
+                
+        # If we reach here, serializers failed for some reason
+        return Response({
+            "error": "Erreur lors de la validation finale",
+            "details": serializer.errors if 'serializer' in locals() else "Unknown error"
         }, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):

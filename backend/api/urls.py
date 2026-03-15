@@ -15,6 +15,7 @@ urlpatterns = router.urls + [
     path('register/', RegisterView.as_view(), name='register'),
     path('register/pharmacy/', PharmacyRegisterView.as_view(), name='register-pharmacy'),
     path('register/client/', ClientRegisterView.as_view(), name='register-client'),
+    path('register/verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('session/', SessionView.as_view(), name='session'),

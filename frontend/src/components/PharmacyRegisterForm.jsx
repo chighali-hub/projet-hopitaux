@@ -10,8 +10,10 @@ function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuc
     email: '',
     telephone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    otp: ''
   })
+  const [step, setStep] = useState(1) // 1: Registration Form, 2: OTP Verification
 
   const [errors, setErrors] = useState({
     nom: '',
@@ -115,20 +117,32 @@ function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuc
     setErrors({ ...newErrors, general: '' })
     
     try {
-      const response = await api.registerPharmacy({
-        nom: formData.nom,
-        username: formData.username,
-        email: formData.email,
-        telephone: formData.telephone,
-        password: formData.password
-      })
-      
-      // Success - redirect to login
-      if (onRegisterSuccess) {
-        onRegisterSuccess(response)
-      } else {
-        // Redirect to login page
-        onNavigateToLogin()
+      if (step === 1) {
+        const response = await api.registerPharmacy({
+          nom: formData.nom,
+          username: formData.username,
+          email: formData.email,
+          telephone: formData.telephone,
+          password: formData.password
+        })
+        
+        // Success - move to OTP step
+        setStep(2)
+      } else if (step === 2) {
+        if (!formData.otp.trim()) {
+           setErrors({ ...newErrors, general: 'Le code de vérification est requis' })
+           setLoading(false)
+           return
+        }
+        
+        const response = await api.verifyRegistrationOTP(formData.email, formData.otp)
+        // Success - redirect to login
+        if (onRegisterSuccess) {
+          onRegisterSuccess(response)
+        } else {
+          // Redirect to login page
+          onNavigateToLogin()
+        }
       }
     } catch (err) {
       // Gérer les erreurs de validation du serializer
@@ -202,91 +216,113 @@ function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuc
         </div>
 
         <form onSubmit={handleSubmit} className="register-form">
-          <div className="form-group">
-            <label htmlFor="nom">Nom de la pharmacie</label>
-            <input
-              type="text"
-              id="nom"
-              name="nom"
-              value={formData.nom}
-              onChange={handleChange}
-              placeholder="Entrez le nom de votre pharmacie"
-              className={errors.nom ? 'input-error' : ''}
-            />
-            {errors.nom && <span className="error-message">{errors.nom}</span>}
-          </div>
+          {step === 1 ? (
+             <>
+                <div className="form-group">
+                  <label htmlFor="nom">Nom de la pharmacie</label>
+                  <input
+                    type="text"
+                    id="nom"
+                    name="nom"
+                    value={formData.nom}
+                    onChange={handleChange}
+                    placeholder="Entrez le nom de votre pharmacie"
+                    className={errors.nom ? 'input-error' : ''}
+                  />
+                  {errors.nom && <span className="error-message">{errors.nom}</span>}
+                </div>
 
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Entrez votre username"
-              className={errors.username ? 'input-error' : ''}
-            />
-            {errors.username && <span className="error-message">{errors.username}</span>}
-          </div>
+                <div className="form-group">
+                  <label htmlFor="username">Username</label>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    placeholder="Entrez votre username"
+                    className={errors.username ? 'input-error' : ''}
+                  />
+                  {errors.username && <span className="error-message">{errors.username}</span>}
+                </div>
 
-          <div className="form-group">
-            <label htmlFor="email">Adresse e-mail</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Entrez votre adresse e-mail"
-              className={errors.email ? 'input-error' : ''}
-            />
-            {errors.email && <span className="error-message">{errors.email}</span>}
-          </div>
+                <div className="form-group">
+                  <label htmlFor="email">Adresse e-mail</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Entrez votre adresse e-mail"
+                    className={errors.email ? 'input-error' : ''}
+                  />
+                  {errors.email && <span className="error-message">{errors.email}</span>}
+                </div>
 
-          <div className="form-group">
-            <label htmlFor="telephone">Téléphone</label>
-            <input
-              type="tel"
-              id="telephone"
-              name="telephone"
-              value={formData.telephone}
-              onChange={handleChange}
-              placeholder="Entrez votre numéro de téléphone"
-              className={errors.telephone ? 'input-error' : ''}
-            />
-            {errors.telephone && <span className="error-message">{errors.telephone}</span>}
-          </div>
+                <div className="form-group">
+                  <label htmlFor="telephone">Téléphone</label>
+                  <input
+                    type="tel"
+                    id="telephone"
+                    name="telephone"
+                    value={formData.telephone}
+                    onChange={handleChange}
+                    placeholder="Entrez votre numéro de téléphone"
+                    className={errors.telephone ? 'input-error' : ''}
+                  />
+                  {errors.telephone && <span className="error-message">{errors.telephone}</span>}
+                </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="password">Mot de passe</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Entrez votre mot de passe"
-                className={errors.password ? 'input-error' : ''}
-              />
-              {errors.password && <span className="error-message">{errors.password}</span>}
-            </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="password">Mot de passe</label>
+                    <input
+                      type="password"
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Entrez votre mot de passe"
+                      className={errors.password ? 'input-error' : ''}
+                    />
+                    {errors.password && <span className="error-message">{errors.password}</span>}
+                  </div>
 
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirmation du mot de passe</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirmez votre mot de passe"
-                className={errors.confirmPassword ? 'input-error' : ''}
-              />
-              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
-            </div>
-          </div>
+                  <div className="form-group">
+                    <label htmlFor="confirmPassword">Confirmation du mot de passe</label>
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Confirmez votre mot de passe"
+                      className={errors.confirmPassword ? 'input-error' : ''}
+                    />
+                    {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+                  </div>
+                </div>
+             </>
+          ) : (
+             <>
+                <div className="form-group">
+                  <label htmlFor="otp">Code de vérification (OTP)</label>
+                  <p className="otp-explainer">Un code à 6 chiffres a été envoyé à <strong>{formData.email}</strong></p>
+                  <input
+                    type="text"
+                    id="otp"
+                    name="otp"
+                    value={formData.otp}
+                    onChange={handleChange}
+                    placeholder="Entrez le code à 6 chiffres"
+                    maxLength="6"
+                    className={errors.general ? 'input-error' : ''}
+                    style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '1.2rem', fontWeight: 'bold' }}
+                  />
+                </div>
+             </>
+          )}
 
           {errors.general && (
             <div className="error-message general-error">
@@ -295,7 +331,7 @@ function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuc
           )}
 
           <button type="submit" className="submit-button" disabled={loading}>
-            {loading ? 'Création du compte...' : 'Créer le compte'}
+            {loading ? (step === 1 ? 'Création de la demande...' : 'Vérification...') : (step === 1 ? 'Créer le compte' : 'Vérifier le code')}
           </button>
 
           <div className="info-message">

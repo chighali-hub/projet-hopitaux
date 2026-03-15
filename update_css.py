@@ -1,3 +1,4 @@
+with open(r'c:\\Users\\hp\\Desktop\\projet-hopitaux\\frontend\\src\\components\\ClientSearchPage.css', 'w', encoding='utf-8') as cssf:\n    cssf.write('''
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 .client-search-app {
@@ -924,3 +925,4 @@
     width: calc(100vw - 24px);
   }
 }
+''')

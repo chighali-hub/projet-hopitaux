@@ -148,8 +148,42 @@ function App() {
           setCurrentPage('location')
         }
       }
+    }
+    else if (data.authenticated && data.role === 'client') {
+      console.log('✅ Inscription client réussie, vérification de la session...', data)
+      
+      // CRITICAL: Wait a bit for cookies to be set, then verify session with backend
+      await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for cookie propagation
+      
+      // Verify session with backend to ensure cookies are received
+      try {
+        const session = await api.getSession()
+        console.log(session)
+        if (session && session.role === 'client') {
+          console.log('✅ Session client vérifiée avec succès:', session)
+          // User is authenticated, set session data from backend response
+          setSessionData(session)
+          setCurrentPage('client-search')
+        } else {
+          console.warn('⚠️ Session client non valide après inscription, redirection vers login')
+          // Session not valid, redirect to login
+          setCurrentPage('client-search')
+        }
+      } catch (err) {
+        console.error('❌ Erreur lors de la vérification de session client après inscription:', err)
+        // If session check fails, still try to use registration data
+        setSessionData({
+          user_id: data.user_id,
+          username: data.username,
+          role: data.role,
+          nom: data.nom,
+          prenom: data.prenom,
+          email: data.email
+        })
+        setCurrentPage('client-search')
+      }
     } else {
-      // For client registration or if authentication failed, redirect to login
+      // For registration without auto-auth or if authentication failed, redirect to login
       setCurrentPage('login')
     }
   }
@@ -196,7 +230,7 @@ function App() {
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
       }}>
         <div style={{ color: 'white', fontSize: '1.2rem' }}>Chargement...</div>
       </div>

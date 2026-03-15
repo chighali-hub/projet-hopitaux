@@ -67,6 +67,14 @@ export const api = {
     body: JSON.stringify(data),
   }),
 
+  verifyRegistrationOTP: (email, otp) => apiRequest('/register/verify-otp/', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email, otp }),
+}),
+
   login: (username, password) => apiRequest('/login/', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
