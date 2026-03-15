@@ -65,7 +65,7 @@ function ClientSearchPage({ onLogout }) {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/stocks/?medicament__nom__icontains=${encodeURIComponent(
+        `${API_BASE_URL}/stocks/?medicament__nom__istartswith=${encodeURIComponent(
           query
         )}`,
         {
@@ -89,6 +89,7 @@ function ClientSearchPage({ onLogout }) {
           id: stock.id,
           nom: stock.pharmacie_nom,
           distance: '—',
+          medicament_nom: stock.medicament_nom,
           localisation: stock.pharmacie_localisation,
           telephone: stock.pharmacie_telephone,
           is_open: stock.pharmacie_is_open,
@@ -189,7 +190,7 @@ function ClientSearchPage({ onLogout }) {
               </div>
             ) : pharmacies.length > 0 ? (
               <div className="client-search-pharmacy-grid">
-                <PharmacyList pharmacies={pharmacies} />
+                <PharmacyList pharmacies={pharmacies} userLocation={userLocation} />
               </div>
             ) : (
               <div className="client-search-empty">

@@ -3,138 +3,155 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  padding: 24px;
+  font-family: 'Outfit', sans-serif;
 }
 
 .location-container {
   background: white;
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 40px;
   max-width: 900px;
   width: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideIn 0.5s ease-out;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .location-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 
 .location-header h1 {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 2rem;
+  color: #111827;
+  margin-bottom: 12px;
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .location-header p {
-  color: #666;
-  font-size: 1rem;
+  color: #6b7280;
+  font-size: 1.05rem;
+  margin: 0;
 }
 
 .location-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .map-wrapper {
   width: 100%;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
   overflow: hidden;
+  border: 1px solid rgba(16, 185, 129, 0.1);
 }
 
 .location-hint {
   text-align: center;
   padding: 20px;
-  background: #f8f9fa;
+  background: #f9fafb;
   border-radius: 12px;
-  margin-top: 20px;
+  margin-top: 24px;
+  border: 1px dashed #d1d5db;
 }
 
 .location-hint p {
-  color: #666;
+  color: #4b5563;
   font-size: 1rem;
   margin: 0;
 }
 
 .error-message {
-  background: #fee;
-  color: #c33;
-  padding: 15px;
-  border-radius: 10px;
+  background: #fef2f2;
+  color: #ef4444;
+  padding: 16px 20px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  border: 1px solid #fcc;
+  gap: 12px;
+  border: 1px solid #fca5a5;
+  font-weight: 500;
 }
 
 .error-message svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
 }
 
 .location-info {
-  margin-top: 10px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 12px;
+  margin-top: 12px;
+  padding: 24px;
+  background: #f0fdf4;
+  border-radius: 16px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .coordinates {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .coordinates p {
   margin: 8px 0;
-  color: #333;
+  color: #047857;
   font-family: 'Courier New', monospace;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .confirm-button {
-  background: #28a745;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
-  padding: 15px 30px;
-  border-radius: 10px;
-  font-size: 1rem;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 1.05rem;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   width: 100%;
-  transition: all 0.3s ease;
-  margin-top: 15px;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-top: 16px;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .confirm-button:hover:not(:disabled) {
-  background: #218838;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.confirm-button:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .confirm-button:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {
   .location-container {
-    padding: 20px;
+    padding: 24px;
+    border-radius: 20px;
   }
 
   .map-wrapper {
@@ -142,8 +159,6 @@
   }
 
   .location-header h1 {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
   }
 }
-
-

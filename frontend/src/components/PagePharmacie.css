@@ -1,22 +1,39 @@
 .pharmacy-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf4 100%);
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f8eb 100%);
+  font-family: 'Outfit', sans-serif;
 }
 
 .pharmacy-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   padding: 30px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.pharmacy-header::before {
+  content: '+';
+  position: absolute;
+  font-size: 150px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.05);
+  right: -20px;
+  bottom: -40px;
+  line-height: 1;
+  transform: rotate(15deg);
+  pointer-events: none;
 }
 
 .profile-section {
   display: flex;
   align-items: center;
   gap: 20px;
+  z-index: 1;
 }
 
 .profile-photo-container {
@@ -34,14 +51,14 @@
   height: 80px;
   overflow: hidden;
   border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .profile-photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border: 3px solid white;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border: 3px solid rgba(255, 255, 255, 0.9);
   display: block;
 }
 
@@ -50,10 +67,11 @@
   height: 100%;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid white;
+  border: 3px solid rgba(255, 255, 255, 0.9);
   flex-shrink: 0;
 }
 
@@ -90,19 +108,23 @@
 
 .profile-info h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
+  letter-spacing: -0.5px;
+  font-weight: 700;
 }
 
 .pharmacy-email {
   margin: 5px 0 0 0;
   opacity: 0.9;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 400;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 15px;
+  z-index: 1;
 }
 
 .notification-container {
@@ -110,22 +132,25 @@
 }
 
 .notification-button {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
   color: white;
-  border: 2px solid white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   padding: 10px 15px;
-  border-radius: 8px;
+  border-radius: 999px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   font-size: 1.2rem;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .notification-button:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .notification-badge {
@@ -142,28 +167,30 @@
   justify-content: center;
   font-size: 0.7rem;
   font-weight: bold;
-  border: 2px solid white;
+  border: 2px solid #059669;
 }
 
 .open-status-button {
   padding: 10px 20px;
-  border-radius: 8px;
-  border: 2px solid white;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   cursor: pointer;
   font-weight: 600;
   font-size: 0.95rem;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: white;
+  font-family: inherit;
 }
 
 .open-status-button.open {
-  background: #10b981;
-  border-color: #10b981;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
 }
 
 .open-status-button.open:hover {
-  background: #059669;
-  border-color: #059669;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .open-status-button.closed {
@@ -174,91 +201,96 @@
 .open-status-button.closed:hover {
   background: #dc2626;
   border-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .logout-button {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
   color: white;
-  border: 2px solid white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: 999px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
 }
 
 .logout-button:hover {
-  background: white;
-  color: #667eea;
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .logout-button svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .pharmacy-main {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 30px 20px;
+  padding: 40px 24px;
 }
 
 .search-section {
-  background: white;
-  padding: 28px;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05);
   margin-bottom: 32px;
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.1);
 }
 
 .search-bar {
   flex: 1;
   min-width: 250px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
 .search-bar input {
   flex: 1;
-  padding: 14px 18px;
-  border: 2px solid rgba(102, 126, 234, 0.2);
-  border-radius: 12px;
-  font-size: 1rem;
+  padding: 14px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  font-size: 1.05rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: #f8f9ff;
+  background: #f9fafb;
+  font-family: inherit;
 }
 
 .search-bar input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #10b981;
   background: white;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
 }
 
 .search-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
   border: none;
   padding: 14px 24px;
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
 }
 
 .search-button:hover {
-  background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
 }
 
 .search-button svg {
@@ -267,21 +299,23 @@
 }
 
 .category-filter {
-  padding: 14px 18px;
-  border: 2px solid rgba(102, 126, 234, 0.2);
-  border-radius: 12px;
+  padding: 14px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
   font-size: 1rem;
   cursor: pointer;
   min-width: 200px;
-  background: #f8f9ff;
+  background: #f9fafb;
+  font-family: inherit;
+  color: #374151;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .category-filter:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #10b981;
   background: white;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
 }
 
 .add-button {
@@ -289,40 +323,51 @@
   color: white;
   border: none;
   padding: 14px 28px;
-  border-radius: 12px;
+  border-radius: 14px;
   font-weight: 600;
+  font-family: inherit;
+  font-size: 1.05rem;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .add-button:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
 .error-banner {
-  background: #fee;
-  color: #c33;
-  padding: 15px 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+  background: #fef2f2;
+  color: #ef4444;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #fcc;
+  border: 1px solid #fca5a5;
+  font-weight: 500;
 }
 
 .error-banner button {
   background: none;
   border: none;
-  color: #c33;
+  color: #ef4444;
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
   width: 30px;
   height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.error-banner button:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .form-modal {
@@ -331,35 +376,57 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .form-modal-content {
   background: white;
-  border-radius: 12px;
-  padding: 30px;
+  border-radius: 24px;
+  padding: 32px;
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .form-modal-content h3 {
   margin-top: 0;
-  margin-bottom: 25px;
-  color: #333;
+  margin-bottom: 24px;
+  color: #111827;
+  font-size: 1.6rem;
+  letter-spacing: -0.5px;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-group {
@@ -374,132 +441,122 @@
 .form-group label {
   margin-bottom: 8px;
   font-weight: 600;
-  color: #333;
+  color: #374151;
+  font-size: 0.95rem;
 }
 
 .form-group input,
 .form-group textarea,
 .form-group select {
-  padding: 10px 12px;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
   font-size: 1rem;
-  transition: border-color 0.3s;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  background: #f9fafb;
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #10b981;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
 }
 
 .form-actions {
   display: flex;
-  gap: 15px;
+  gap: 16px;
   justify-content: flex-end;
-  margin-top: 25px;
+  margin-top: 32px;
 }
 
 .form-actions button {
-  padding: 12px 25px;
-  border-radius: 8px;
+  padding: 12px 28px;
+  border-radius: 12px;
   font-weight: 600;
+  font-family: inherit;
+  font-size: 1.05rem;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .form-actions button[type="button"] {
-  background: #f0f0f0;
+  background: #f3f4f6;
   border: none;
-  color: #333;
+  color: #4b5563;
 }
 
 .form-actions button[type="button"]:hover {
-  background: #e0e0e0;
+  background: #e5e7eb;
+  color: #1f2937;
 }
 
 .form-actions button[type="submit"] {
-  background: #667eea;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .form-actions button[type="submit"]:hover {
-  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
 .medicines-section {
   background: white;
-  border-radius: 16px;
+  border-radius: 24px;
   padding: 32px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.1);
 }
 
 .loading,
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  color: #718096;
+  color: #6b7280;
   font-size: 1.15rem;
   font-weight: 500;
 }
 
 .empty-state {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%);
   border-radius: 16px;
-  border: 2px dashed rgba(102, 126, 234, 0.2);
+  border: 2px dashed rgba(16, 185, 129, 0.3);
 }
 
 .medicines-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
   padding: 10px 0;
 }
 
 .medicine-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
-  border: 1px solid rgba(102, 126, 234, 0.1);
-  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  border-radius: 20px;
   padding: 24px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
   position: relative;
   overflow: hidden;
-  /* Animation d'apparition */
   animation: fadeInUp 0.5s ease-out forwards;
   opacity: 0;
   transform: translateY(20px);
 }
 
-.medicine-card:nth-child(1) {
-  animation-delay: 0.05s;
-}
-
-.medicine-card:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.medicine-card:nth-child(3) {
-  animation-delay: 0.15s;
-}
-
-.medicine-card:nth-child(4) {
-  animation-delay: 0.2s;
-}
-
-.medicine-card:nth-child(5) {
-  animation-delay: 0.25s;
-}
-
-.medicine-card:nth-child(6) {
-  animation-delay: 0.3s;
-}
-
-.medicine-card:nth-child(n+7) {
-  animation-delay: 0.35s;
-}
+.medicine-card:nth-child(1) { animation-delay: 0.05s; }
+.medicine-card:nth-child(2) { animation-delay: 0.1s; }
+.medicine-card:nth-child(3) { animation-delay: 0.15s; }
+.medicine-card:nth-child(4) { animation-delay: 0.2s; }
+.medicine-card:nth-child(5) { animation-delay: 0.25s; }
+.medicine-card:nth-child(6) { animation-delay: 0.3s; }
+.medicine-card:nth-child(n+7) { animation-delay: 0.35s; }
 
 @keyframes fadeInUp {
   to {
@@ -513,65 +570,67 @@
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, #10b981, #059669);
+  border-radius: 4px 0 0 4px;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.3s ease;
 }
 
 .medicine-card:hover {
-  border-color: rgba(102, 126, 234, 0.3);
-  box-shadow: 0 12px 32px rgba(102, 126, 234, 0.15);
-  transform: translateY(-8px);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.12);
+  transform: translateY(-6px);
+  background: #ffffff;
 }
 
 .medicine-card:hover::before {
-  transform: scaleX(1);
+  transform: scaleY(1);
 }
 
 .medicine-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: flex-start;
   margin-bottom: 20px;
   gap: 12px;
 }
 
 .medicine-header h4 {
   margin: 0;
-  color: #1a202c;
+  color: #111827;
   font-size: 1.35rem;
   font-weight: 700;
   line-height: 1.3;
   flex: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.5px;
 }
 
 .category-badge {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #10b981;
   padding: 6px 14px;
-  border-radius: 20px;
+  border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
   flex-shrink: 0;
 }
 
 .medicine-details {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.6);
+  background: #f9fafb;
   border-radius: 12px;
-  border: 1px solid rgba(102, 126, 234, 0.1);
+  border: 1px solid #e5e7eb;
 }
 
 .medicine-details p {
   margin: 10px 0;
-  color: #4a5568;
+  color: #4b5563;
   font-size: 1rem;
   display: flex;
   align-items: center;
@@ -579,7 +638,7 @@
 }
 
 .medicine-details p strong {
-  color: #2d3748;
+  color: #1f2937;
   font-weight: 600;
   min-width: 80px;
 }
@@ -587,7 +646,6 @@
 .medicine-actions {
   display: flex;
   gap: 12px;
-  margin-top: 8px;
 }
 
 .edit-button,
@@ -595,42 +653,38 @@
   flex: 1;
   padding: 12px 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-weight: 600;
+  font-family: inherit;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .edit-button {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: white;
 }
 
 .edit-button:hover {
-  background: linear-gradient(135deg, #3d8bfe 0%, #00d9fe 100%);
-  box-shadow: 0 4px 16px rgba(79, 172, 254, 0.4);
   transform: translateY(-2px);
-}
-
-.edit-button:active {
-  transform: translateY(0);
+  box-shadow: 0 6px 15px rgba(14, 165, 233, 0.3);
 }
 
 .delete-button {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
 }
 
 .delete-button:hover {
-  background: linear-gradient(135deg, #f85a8a 0%, #fed030 100%);
-  box-shadow: 0 4px 16px rgba(250, 112, 154, 0.4);
   transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(239, 68, 68, 0.3);
 }
 
+.edit-button:active,
 .delete-button:active {
   transform: translateY(0);
 }
@@ -640,6 +694,7 @@
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .modal-overlay {
@@ -648,73 +703,92 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content {
   background: white;
-  border-radius: 12px;
-  padding: 30px;
+  border-radius: 20px;
+  padding: 32px;
   max-width: 400px;
   width: 90%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .modal-content h3 {
   margin-top: 0;
-  color: #333;
+  color: #111827;
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
 }
 
 .modal-content p {
-  color: #666;
-  margin-bottom: 25px;
+  color: #4b5563;
+  margin-bottom: 30px;
+  font-size: 1.05rem;
 }
 
 .modal-actions {
   display: flex;
-  gap: 15px;
+  gap: 16px;
   justify-content: flex-end;
 }
 
 .modal-actions button {
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
   font-weight: 600;
+  font-family: inherit;
+  font-size: 1rem;
   cursor: pointer;
   border: none;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .modal-actions button:first-child {
-  background: #f0f0f0;
-  color: #333;
+  background: #f3f4f6;
+  color: #4b5563;
 }
 
 .modal-actions button:first-child:hover {
-  background: #e0e0e0;
+  background: #e5e7eb;
+  color: #1f2937;
 }
 
 .confirm-logout {
-  background: #dc3545;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
 
 .confirm-logout:hover {
-  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
 @media (max-width: 768px) {
   .pharmacy-header {
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
     text-align: center;
+    padding: 30px 20px;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 
   .search-section {
     flex-direction: column;
+    padding: 20px;
   }
 
   .form-grid {
@@ -723,7 +797,6 @@
 
   .medicines-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
   }
 
   .medicine-card {
@@ -731,11 +804,7 @@
   }
 
   .medicine-header h4 {
-    font-size: 1.2rem;
-  }
-
-  .medicine-details {
-    padding: 12px;
+    font-size: 1.25rem;
   }
 
   .medicine-actions {

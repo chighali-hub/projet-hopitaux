@@ -1,9 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
 :root {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.5;
+  /* Color Palette - Pharmacy Theme */
+  --color-primary: #10b981; /* Emerald 500 */
+  --color-primary-dark: #059669; /* Emerald 600 */
+  --color-primary-light: #34d399; /* Emerald 400 */
+  --color-secondary: #0ea5e9; /* Sky 500 */
+  --color-secondary-dark: #0284c7; /* Sky 600 */
+  
+  --color-background: #f0fdf4; /* Green 50 */
+  --color-surface: #ffffff;
+  
+  --color-text-main: #111827; /* Gray 900 */
+  --color-text-muted: #6b7280; /* Gray 500 */
+  
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  /* Typography */
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.6;
   font-weight: 400;
-  color: #333;
-  background-color: #FFFFFF;
+  
+  color: var(--color-text-main);
+  background-color: var(--color-background);
+  
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,16 +43,39 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f8eb 100%);
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
 }
 
 button {
   font-family: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 input, textarea, select {
   font-family: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.5);
 }

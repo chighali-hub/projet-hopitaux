@@ -182,3 +182,16 @@ class MedicineNotification(models.Model):
     
     def __str__(self):
         return f"Notification: {self.medicine_name} disponible à {self.pharmacie.nom}"
+
+# =========================
+# Pending Registration (2FA Verification)
+# =========================
+class PendingRegistration(models.Model):
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=20)
+    registration_data = models.JSONField()
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Pending {self.role} - {self.email}"
