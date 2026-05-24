@@ -1,2 +1,2 @@
 # projet-hopitaux
-projet pour gérer les rendez-vous des hopitaux
+projet pour gérer le recherche dans les pharmacies
