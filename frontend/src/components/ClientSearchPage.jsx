@@ -20,6 +20,7 @@ function ClientSearchPage({ onLogout }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   // Get client current position once, when the page loads
   useEffect(() => {
@@ -127,6 +128,20 @@ function ClientSearchPage({ onLogout }) {
     setShowNotifications(!showNotifications)
   }
 
+  const handleLogout = async () => {
+    try {
+      await api.logout()
+      if (onLogout) {
+        onLogout()
+      }
+    } catch (err) {
+      console.error('Logout error:', err)
+      if (onLogout) {
+        onLogout() // Toujours déconnecter côté frontend même si l'API échoue
+      }
+    }
+  }
+
   return (
     <div dir="ltr" className="client-search-app">
       <header className="client-search-header">
@@ -153,7 +168,7 @@ function ClientSearchPage({ onLogout }) {
                 <button
                   type="button"
                   className="client-search-logout-button"
-                  onClick={onLogout}
+                  onClick={() => setShowLogoutConfirm(true)}
                 >
                   <FaSignOutAlt />
                   <span>Déconnexion</span>
@@ -247,6 +262,38 @@ function ClientSearchPage({ onLogout }) {
           © 2024 Système de gestion des pharmacies. Tous droits réservés.
         </p>
       </footer>
+
+      {/* Modal de confirmation de déconnexion */}
+      {showLogoutConfirm && (
+        <div
+          className="logout-modal-overlay"
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <div
+            className="logout-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Confirmer la déconnexion</h3>
+            <p>Êtes-vous sûr de vouloir vous déconnecter ?</p>
+            <div className="logout-modal-buttons">
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() => setShowLogoutConfirm(false)}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="confirm-logout"
+                onClick={handleLogout}
+              >
+                Déconnexion
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating assistant about pharmacies info */}
       <PharmacyChatBot pharmacies={pharmacies} userLocation={userLocation} />

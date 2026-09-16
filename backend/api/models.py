@@ -43,7 +43,6 @@ class Pharmacie(models.Model):
 # Medicament
 # =========================
 class Medicament(models.Model):
-    id = models.AutoField(primary_key=True)  
     nom = models.CharField(max_length=100)
     categorie = models.CharField(max_length=100)
     forme = models.CharField(max_length=50)

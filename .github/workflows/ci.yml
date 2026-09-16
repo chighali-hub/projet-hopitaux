@@ -1,0 +1,98 @@
+name: CI Backend
+
+on:
+  push:
+    branches:
+      - chighali
+      - 'feat/**'
+      - main
+  pull_request:
+    branches:
+      - main
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ruff
+        run: pip install ruff==0.16.7
+
+      # Scoped to real errors (syntax errors, undefined names, invalid
+      # control flow) rather than style: the codebase has never been
+      # linted before, and a full style pass is out of scope here. This
+      # selection is exactly what would have caught the unresolved git
+      # merge-conflict markers that previously broke this project.
+      - name: Run ruff (critical errors only)
+        run: ruff check --select=E9,F63,F7,F82 --exclude=migrations,mongo_migrations .
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Django has no compile step; `check` validates that every app,
+      # model, view and URL import resolves and that settings load.
+      - name: Django system check
+        env:
+          SECRET_KEY: ci-build-check-key
+          EMAIL_HOST_USER: ci@example.com
+          EMAIL_HOST_PASSWORD: ci-dummy-password
+          MONGODB_URI: mongodb://localhost:27017/
+          MONGODB_NAME: ci_build_check
+        run: python manage.py check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # api/tests.py is currently empty, so no live database is needed
+      # yet. Once real DB-touching tests are added, this job will need
+      # a MongoDB service container configured as a single-node replica
+      # set (django-mongodb-backend requires a replica set for the
+      # transactions Django's test runner uses to isolate each test).
+      - name: Run test suite
+        env:
+          SECRET_KEY: ci-test-key
+          EMAIL_HOST_USER: ci@example.com
+          EMAIL_HOST_PASSWORD: ci-dummy-password
+          MONGODB_URI: mongodb://localhost:27017/
+          MONGODB_NAME: ci_test
+        run: python manage.py test

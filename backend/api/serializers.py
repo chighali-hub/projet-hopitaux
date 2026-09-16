@@ -1,15 +1,26 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django_mongodb_backend.fields import ObjectIdAutoField, ObjectIdField
 from .models import *
 User = get_user_model()
 
-class UserSerializer(serializers.ModelSerializer):
+
+class ModelSerializer(serializers.ModelSerializer):
+    """ModelSerializer that represents MongoDB ObjectId primary keys as strings."""
+    serializer_field_mapping = {
+        **serializers.ModelSerializer.serializer_field_mapping,
+        ObjectIdAutoField: serializers.CharField,
+        ObjectIdField: serializers.CharField,
+    }
+
+
+class UserSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'role']
 
-class PharmacieSerializer(serializers.ModelSerializer):
+class PharmacieSerializer(ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     photo_profile = serializers.SerializerMethodField()
     
@@ -33,13 +44,13 @@ class PharmacieSerializer(serializers.ModelSerializer):
             return f"http://localhost:8000/{settings.MEDIA_URL.rstrip('/')}/{photo_url}"
         return None
 
-class MedicamentSerializer(serializers.ModelSerializer):
+class MedicamentSerializer(ModelSerializer):
     class Meta:
         model = Medicament
         fields = '__all__'
 
 
-class StockSerializer(serializers.ModelSerializer):
+class StockSerializer(ModelSerializer):
     medicament_nom = serializers.CharField(source='medicament.nom', read_only=True)
     medicament_categorie = serializers.CharField(source='medicament.categorie', read_only=True)
     pharmacie_nom = serializers.CharField(source='pharmacie.nom', read_only=True)
@@ -64,19 +75,19 @@ class StockSerializer(serializers.ModelSerializer):
             'pharmacie_is_open',
         ]
 
-class ClientSerializer(serializers.ModelSerializer):
+class ClientSerializer(ModelSerializer):
     class Meta:
         model = Client
         fields = '__all__'
 
-class CommandeSerializer(serializers.ModelSerializer):
+class CommandeSerializer(ModelSerializer):
     class Meta:
         model = Commande
         fields = '__all__'
 
 ## Registration Serializer
 
-class RegisterSerializer(serializers.ModelSerializer):
+class RegisterSerializer(ModelSerializer):
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -175,7 +186,7 @@ class ClientRegisterSerializer(serializers.Serializer):
 
 ## Medicine Notification Serializers
 
-class MedicineNotificationRequestSerializer(serializers.ModelSerializer):
+class MedicineNotificationRequestSerializer(ModelSerializer):
     client_nom = serializers.CharField(source='client.nom', read_only=True)
     client_prenom = serializers.CharField(source='client.prenom', read_only=True)
     client_email = serializers.CharField(source='client.email', read_only=True)
@@ -185,7 +196,7 @@ class MedicineNotificationRequestSerializer(serializers.ModelSerializer):
         fields = ['id', 'client', 'client_nom', 'client_prenom', 'client_email', 'medicine_name', 'created_at', 'is_active']
         read_only_fields = ['id', 'client', 'created_at']
 
-class MedicineNotificationSerializer(serializers.ModelSerializer):
+class MedicineNotificationSerializer(ModelSerializer):
     pharmacie_nom = serializers.CharField(source='pharmacie.nom', read_only=True)
     pharmacie_telephone = serializers.CharField(source='pharmacie.telephone', read_only=True)
     pharmacie_localisation = serializers.CharField(source='pharmacie.localisation', read_only=True)
