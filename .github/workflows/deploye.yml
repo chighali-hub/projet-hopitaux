@@ -1,0 +1,22 @@
+name: Deploy Backend
+
+# NOTE: this also deploys on pull_request events targeting main, per the
+# requested trigger. That means opening/updating a PR against main will
+# push unmerged code to the live Render service, before review. If that
+# is not intended, restrict the "Trigger Render deploy hook" step to
+# `if: github.event_name == 'push'`.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy hook
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"

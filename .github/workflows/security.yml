@@ -1,0 +1,46 @@
+name: Security Backend
+
+on:
+  push:
+    branches:
+      - chighali
+      - 'feat/**'
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:1.177.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Standalone/open-source mode: no Semgrep AppSec Platform account
+      # or SEMGREP_APP_TOKEN needed. `--config=auto` selects community
+      # rulesets based on the languages found in the scanned path.
+      # `--error` is required for Semgrep to actually fail the job on
+      # findings; without it, findings are only reported.
+      - name: Run Semgrep
+        working-directory: backend
+        run: semgrep scan --config=auto --error
+
+  trivy:
+    name: Trivy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: 'backend'
+          scanners: 'vuln,secret,misconfig'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'

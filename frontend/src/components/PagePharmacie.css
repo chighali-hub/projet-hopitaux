@@ -259,6 +259,7 @@
 
 .search-bar input {
   flex: 1;
+  min-width: 0;
   padding: 14px 20px;
   border: 2px solid #e5e7eb;
   border-radius: 14px;
@@ -789,6 +790,13 @@
   .search-section {
     flex-direction: column;
     padding: 20px;
+  }
+
+  .search-bar,
+  .category-filter,
+  .add-button {
+    width: 100%;
+    min-width: 0;
   }
 
   .form-grid {

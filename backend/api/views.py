@@ -66,7 +66,7 @@ def get_user_from_session(request):
             request.user = user  # Attach to request for compatibility
             # If user_id was not in session, sync it for future requests
             if not request.session.get('user_id'):
-                request.session['user_id'] = user.id
+                request.session['user_id'] = str(user.id)
                 request.session['username'] = user.username
                 request.session['role'] = user.role
                 request.session.modified = True
@@ -81,7 +81,7 @@ def get_user_from_session(request):
         user = request.user
         # Sync session data for future requests
         if not request.session.get('user_id'):
-            request.session['user_id'] = user.id
+            request.session['user_id'] = str(user.id)
             request.session['username'] = user.username
             request.session['role'] = user.role
             request.session.modified = True
@@ -431,26 +431,14 @@ class StockViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Public stock listing for search:
-        - Filter by medicine name (supports both ?medicament__nom__icontains= and ?search=).
+        - Filter by medicine name (?medicament__nom__istartswith=).
         - Only returns stocks with positive quantity.
         """
         queryset = Stock.objects.select_related('pharmacie', 'medicament').all()
 
-<<<<<<< HEAD
-        # Accept both the explicit ORM-style param used in the frontend
-        # and a generic ?search= param (for backwards/defensive compatibility).
-        search_param = self.request.query_params.get('medicament__nom__icontains')
-        if not search_param:
-            search_param = self.request.query_params.get('search')
-=======
-        # Filter by medicine name (compatible with the planned frontend query param)
         search = self.request.query_params.get('medicament__nom__istartswith')
         if search:
             queryset = queryset.filter(medicament__nom__istartswith=search)
->>>>>>> 08d20fea050ccc5a449f89140b1ca5f191b5227c
-
-        if search_param:
-            queryset = queryset.filter(medicament__nom__icontains=search_param.strip())
 
         # Only keep items that are actually in stock
         queryset = queryset.filter(quantite__gt=0)
@@ -505,7 +493,9 @@ class PharmacyRegisterView(APIView):
             email = request.data.get('email')
             
             # Store data in PendingRegistration
-            PendingRegistration.objects.update_or_create(
+            # Note: get_or_create (not update_or_create) because update_or_create
+            # relies on select_for_update(), which the MongoDB backend doesn't support.
+            pending, created = PendingRegistration.objects.get_or_create(
                 email=email,
                 defaults={
                     'role': 'pharmacien',
@@ -513,6 +503,11 @@ class PharmacyRegisterView(APIView):
                     'otp': otp
                 }
             )
+            if not created:
+                pending.role = 'pharmacien'
+                pending.registration_data = request.data
+                pending.otp = otp
+                pending.save()
             
             # Send OTP via email
             send_mail(
@@ -569,7 +564,9 @@ class ClientRegisterView(APIView):
                 otp = str(random.randint(100000, 999999))
                 email = request.data.get('email')
                 
-                PendingRegistration.objects.update_or_create(
+                # Note: get_or_create (not update_or_create) because update_or_create
+                # relies on select_for_update(), which the MongoDB backend doesn't support.
+                pending, created = PendingRegistration.objects.get_or_create(
                     email=email,
                     defaults={
                         'role': 'client',
@@ -577,6 +574,11 @@ class ClientRegisterView(APIView):
                         'otp': otp
                     }
                 )
+                if not created:
+                    pending.role = 'client'
+                    pending.registration_data = request.data
+                    pending.otp = otp
+                    pending.save()
                 
                 # Send OTP via email
                 send_mail(
@@ -647,10 +649,10 @@ class VerifyOTPView(APIView):
                     request.session.create()
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 
-                request.session['user_id'] = user.id
+                request.session['user_id'] = str(user.id)
                 request.session['username'] = user.username
                 request.session['role'] = user.role
-                request.session['id_pharmacie'] = pharmacie.id
+                request.session['id_pharmacie'] = str(pharmacie.id)
                 request.session['nom'] = pharmacie.nom
                 request.session['email'] = pharmacie.email
                 request.session['has_location'] = bool(pharmacie.localisation)
@@ -687,10 +689,10 @@ class VerifyOTPView(APIView):
                     request.session.create()
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 
-                request.session['user_id'] = user.id
+                request.session['user_id'] = str(user.id)
                 request.session['username'] = user.username
                 request.session['role'] = user.role
-                request.session['id_client'] = client.id
+                request.session['id_client'] = str(client.id)
                 
                 request.session.modified = True
                 request.session.save()
@@ -752,10 +754,10 @@ class LoginView(APIView):
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 
                 # Store session data
-                request.session['user_id'] = user.id
+                request.session['user_id'] = str(user.id)
                 request.session['username'] = user.username
                 request.session['role'] = user.role
-                request.session['id_pharmacie'] = pharmacie.id
+                request.session['id_pharmacie'] = str(pharmacie.id)
                 request.session['nom'] = pharmacie.nom
                 request.session['email'] = pharmacie.email
                 request.session['has_location'] = bool(pharmacie.localisation)
@@ -788,10 +790,10 @@ class LoginView(APIView):
                 login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 
                 # Store session data
-                request.session['user_id'] = user.id
+                request.session['user_id'] = str(user.id)
                 request.session['username'] = user.username
                 request.session['role'] = user.role
-                request.session['id_client'] = client.id
+                request.session['id_client'] = str(client.id)
                 
                 # Force session to be marked as modified (ensures cookie is sent)
                 request.session.modified = True
@@ -861,7 +863,7 @@ class SessionView(APIView):
                 request.user = user  # Attach to request for compatibility
                 # If user_id was not in session, sync it for future requests
                 if not request.session.get('user_id'):
-                    request.session['user_id'] = user.id
+                    request.session['user_id'] = str(user.id)
                     request.session['username'] = user.username
                     request.session['role'] = user.role
                     request.session.modified = True
@@ -875,7 +877,7 @@ class SessionView(APIView):
             user = request.user
             # Sync session data for future requests
             if not request.session.get('user_id'):
-                request.session['user_id'] = user.id
+                request.session['user_id'] = str(user.id)
                 request.session['username'] = user.username
                 request.session['role'] = user.role
                 request.session.modified = True
