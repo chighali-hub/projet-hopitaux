@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -26,12 +26,6 @@ function MapPicker({ onLocationSelect, initialLocation = null }) {
   const [position, setPosition] = useState(
     initialLocation || { latitude: 18.0735, longitude: -15.9582 } // Nouakchott par défaut
   )
-
-  useEffect(() => {
-    if (initialLocation) {
-      setPosition(initialLocation)
-    }
-  }, [initialLocation])
 
   const handleLocationSelect = (location) => {
     setPosition(location)

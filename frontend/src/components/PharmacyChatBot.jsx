@@ -139,7 +139,7 @@ function PharmacyChatBot({ pharmacies, userLocation }) {
         return "Je n'ai pas de coordonnées pour calculer la pharmacie la plus proche."
       }
 
-     const sorted = withDistance.sort((a, b) => {
+     withDistance.sort((a, b) => {
   // Opened first
   if (a.is_open && !b.is_open) return -1;
   if (!a.is_open && b.is_open) return 1;

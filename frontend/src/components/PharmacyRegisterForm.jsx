@@ -118,7 +118,7 @@ function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuc
     
     try {
       if (step === 1) {
-        const response = await api.registerPharmacy({
+        await api.registerPharmacy({
           nom: formData.nom,
           username: formData.username,
           email: formData.email,
@@ -154,7 +154,7 @@ function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuc
         // Si l'erreur contient un objet 'errors' avec les erreurs par champ
         if (err.response.errors && typeof err.response.errors === 'object') {
           Object.keys(err.response.errors).forEach(field => {
-            if (fieldErrors.hasOwnProperty(field)) {
+            if (Object.prototype.hasOwnProperty.call(fieldErrors, field)) {
               const fieldError = err.response.errors[field]
               fieldErrors[field] = Array.isArray(fieldError) 
                 ? fieldError[0] 
@@ -166,7 +166,7 @@ function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuc
         // Si l'erreur est directement un objet avec les champs (format serializer.errors)
         else if (typeof err.response === 'object' && !err.response.error && !err.response.message) {
           Object.keys(err.response).forEach(field => {
-            if (fieldErrors.hasOwnProperty(field)) {
+            if (Object.prototype.hasOwnProperty.call(fieldErrors, field)) {
               const fieldError = err.response[field]
               fieldErrors[field] = Array.isArray(fieldError) 
                 ? fieldError[0] 
@@ -179,7 +179,7 @@ function PharmacyRegisterForm({ onNavigateToLogin, onBackToChoose, onRegisterSuc
         else {
           // Extraire les erreurs par champ si elles existent
           Object.keys(err.response).forEach(field => {
-            if (field !== 'error' && field !== 'message' && fieldErrors.hasOwnProperty(field)) {
+            if (field !== 'error' && field !== 'message' && Object.prototype.hasOwnProperty.call(fieldErrors, field)) {
               const fieldError = err.response[field]
               fieldErrors[field] = Array.isArray(fieldError) 
                 ? fieldError[0] 

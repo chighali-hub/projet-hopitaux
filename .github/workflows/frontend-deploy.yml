@@ -1,0 +1,45 @@
+name: Deploy Frontend
+
+# Runs only after the "CI Frontend" workflow finishes on main (so only
+# for an actual push to main - e.g. a merged PR - not an open PR, since
+# a pull_request-triggered CI run is associated with its head branch,
+# not main). The explicit `conclusion == 'success'` check below is
+# required: workflow_run fires on failure too, not just success.
+on:
+  workflow_run:
+    workflows: ['CI Frontend']
+    types: [completed]
+    branches: [main]
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      # Pin the exact commit that passed CI. Without `ref`, checkout
+      # defaults to the current tip of main, which could have moved on
+      # again by the time this deploy job actually runs.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@59.19.1
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build project artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
