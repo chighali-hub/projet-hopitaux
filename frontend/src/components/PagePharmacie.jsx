@@ -17,7 +17,6 @@ function PagePharmacie({ sessionData, onLogout }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [notificationRequests, setNotificationRequests] = useState([])
   const [showNotificationPanel, setShowNotificationPanel] = useState(false)
-  const [loadingRequests, setLoadingRequests] = useState(false)
 
   const [formData, setFormData] = useState({
     nom: '',
@@ -59,15 +58,12 @@ function PagePharmacie({ sessionData, onLogout }) {
   }
 
   const loadNotificationRequests = async () => {
-    setLoadingRequests(true)
     try {
       const data = await api.getPharmacyNotificationRequests()
       setNotificationRequests(data.medicines || [])
     } catch (err) {
       console.error('Error loading notification requests:', err)
       setNotificationRequests([])
-    } finally {
-      setLoadingRequests(false)
     }
   }
 

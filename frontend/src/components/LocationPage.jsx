@@ -3,7 +3,7 @@ import { api } from '../utils/api'
 import MapPicker from './MapPicker'
 import './LocationPage.css'
 
-function LocationPage({ onLocationConfirmed, sessionData }) {
+function LocationPage({ onLocationConfirmed }) {
   const [location, setLocation] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -21,7 +21,7 @@ function LocationPage({ onLocationConfirmed, sessionData }) {
         setSessionValid(false)
         setError('Session invalide. Veuillez vous reconnecter.')
       }
-    } catch (err) {
+    } catch {
       setSessionValid(false)
       setError('Erreur de session. Veuillez vous reconnecter.')
     }
