@@ -207,6 +207,10 @@ export const api = {
     return api.getMedicines(params)
   },
 
+  // Search pharmacy stock by medicine name (used by the client search page,
+  // returns per-pharmacy price/quantity/location alongside the medicine)
+  searchStocks: (query) => apiRequest(`/stocks/?medicament__nom__istartswith=${encodeURIComponent(query)}`),
+
   // Medicine Notifications
   createNotificationRequest: (medicineName) => apiRequest('/notifications/request/', {
     method: 'POST',

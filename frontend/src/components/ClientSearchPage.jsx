@@ -8,8 +8,6 @@ import { FaPills, FaHospital, FaSignOutAlt, FaBell } from 'react-icons/fa'
 import { api } from '../utils/api'
 import './ClientSearchPage.css'
 
-const API_BASE_URL = 'http://localhost:8000/api'
-
 function ClientSearchPage({ onLogout }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [pharmacies, setPharmacies] = useState([])
@@ -65,20 +63,7 @@ function ClientSearchPage({ onLogout }) {
     setLoading(true)
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/stocks/?medicament__nom__istartswith=${encodeURIComponent(
-          query
-        )}`,
-        {
-          credentials: 'include',
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}`)
-      }
-
-      const data = await response.json()
+      const data = await api.searchStocks(query)
 
       const pharmaciesFromApi = data.map((stock) => {
         const loc = stock.pharmacie_localisation || ''
