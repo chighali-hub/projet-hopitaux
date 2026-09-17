@@ -21,6 +21,14 @@ function App() {
   }, [])
 
   const checkSession = async () => {
+    // No token stored means no one is logged in - skip the network round-trip.
+    if (!api.hasToken()) {
+      setSessionData(null)
+      setCurrentPage('home')
+      setLoading(false)
+      return
+    }
+
     try {
       const data = await api.getSession()
       
@@ -101,89 +109,31 @@ function App() {
     }
   }
 
-  const handleRegisterSuccess = async (data) => {
-    // After pharmacy registration, user is automatically authenticated by backend
-    if (data.authenticated && data.role === 'pharmacien') {
-      console.log('✅ Inscription réussie, vérification de la session...', data)
-      
-      // CRITICAL: Wait a bit for cookies to be set, then verify session with backend
-      await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for cookie propagation
-      
-      // Verify session with backend to ensure cookies are received
-      try {
-        const session = await api.getSession()
-        if (session && session.role === 'pharmacien') {
-          console.log('✅ Session vérifiée avec succès:', session)
-          // User is authenticated, set session data from backend response
-          setSessionData(session)
-          
-          // Redirect based on has_location from backend
-          if (session.has_location === true || session.has_location === 'true') {
-            setCurrentPage('pharmacy')
-          } else {
-            setCurrentPage('location')
-          }
-        } else {
-          console.warn('⚠️ Session non valide après inscription, redirection vers login')
-          // Session not valid, redirect to login
-          setCurrentPage('login')
-        }
-      } catch (err) {
-        console.error('❌ Erreur lors de la vérification de session après inscription:', err)
-        // If session check fails, still try to use registration data
-        setSessionData({
-          user_id: data.user_id,
-          username: data.username,
-          role: data.role,
-          id_pharmacie: data.pharmacie_id,
-          nom: data.nom,
-          email: data.email,
-          has_location: data.has_location
-        })
-        
-        // Redirect based on has_location
-        if (data.has_location === true || data.has_location === 'true') {
-          setCurrentPage('pharmacy')
-        } else {
-          setCurrentPage('location')
-        }
-      }
-    }
-    else if (data.authenticated && data.role === 'client') {
-      console.log('✅ Inscription client réussie, vérification de la session...', data)
-      
-      // CRITICAL: Wait a bit for cookies to be set, then verify session with backend
-      await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for cookie propagation
-      
-      // Verify session with backend to ensure cookies are received
-      try {
-        const session = await api.getSession()
-        console.log(session)
-        if (session && session.role === 'client') {
-          console.log('✅ Session client vérifiée avec succès:', session)
-          // User is authenticated, set session data from backend response
-          setSessionData(session)
-          setCurrentPage('client-search')
-        } else {
-          console.warn('⚠️ Session client non valide après inscription, redirection vers login')
-          // Session not valid, redirect to login
-          setCurrentPage('client-search')
-        }
-      } catch (err) {
-        console.error('❌ Erreur lors de la vérification de session client après inscription:', err)
-        // If session check fails, still try to use registration data
-        setSessionData({
-          user_id: data.user_id,
-          username: data.username,
-          role: data.role,
-          nom: data.nom,
-          prenom: data.prenom,
-          email: data.email
-        })
-        setCurrentPage('client-search')
-      }
+  const handleRegisterSuccess = (data) => {
+    // verifyRegistrationOTP() already stored the auth token; the response
+    // itself carries everything needed to build the session, exactly like
+    // handleLoginSuccess - no need to re-verify with a follow-up request.
+    if (data.role === 'pharmacien') {
+      setSessionData({
+        user_id: data.user_id,
+        username: data.username,
+        role: data.role,
+        id_pharmacie: data.pharmacie_id,
+        nom: data.nom,
+        email: data.email,
+        has_location: data.has_location,
+      })
+      setCurrentPage(data.has_location ? 'pharmacy' : 'location')
+    } else if (data.role === 'client') {
+      setSessionData({
+        user_id: data.user_id,
+        username: data.username,
+        role: data.role,
+        id_client: data.client_id,
+        email: data.email,
+      })
+      setCurrentPage('client-search')
     } else {
-      // For registration without auto-auth or if authentication failed, redirect to login
       setCurrentPage('login')
     }
   }
