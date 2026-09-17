@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_mongodb_backend',
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',  # CORS support
     'api',
 ]
@@ -175,8 +176,6 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL')
 if FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
 
-CORS_ALLOW_CREDENTIALS = True
-
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -199,16 +198,16 @@ CSRF_TRUSTED_ORIGINS = [
 if FRONTEND_URL:
     CSRF_TRUSTED_ORIGINS.append(FRONTEND_URL)
 
-# The frontend (Vercel) and backend (Render) are on different sites, so the
-# session/CSRF cookies need SameSite=None + Secure to survive a cross-site
-# request. That combination requires HTTPS, so it's only safe once DEBUG is
-# off (real deployment) - locally over http://localhost it stays Lax.
-CSRF_COOKIE_SAMESITE = 'Lax' if DEBUG else 'None'
+# These cookies are only ever used for the Django admin's own login, which
+# is always accessed directly on this site (never cross-site from the
+# frontend) - the API itself authenticates with a token, not a session
+# cookie, so it isn't affected by Safari's third-party cookie blocking.
+CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False
 
 # Session Configuration
-SESSION_COOKIE_SAMESITE = 'Lax' if DEBUG else 'None'
+SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 SESSION_SAVE_EVERY_REQUEST = True
@@ -216,8 +215,14 @@ SESSION_COOKIE_AGE = 86400  # 24 hours
 
 # REST Framework Configuration
 REST_FRAMEWORK = {
+    # Token-based, not session-cookie-based: the frontend (Vercel) and
+    # backend (Render) are on different sites, and Safari blocks
+    # third-party cookies outright regardless of SameSite/Secure, so a
+    # session cookie set cross-site never survives on iOS. A token sent
+    # back in the login response and attached to an Authorization header
+    # doesn't depend on cookies at all.
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',

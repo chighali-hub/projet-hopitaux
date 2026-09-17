@@ -1,16 +1,47 @@
 // API utility for Django REST Framework
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const TOKEN_STORAGE_KEY = 'auth_token'
+
+// Token-based auth, not session cookies: the frontend and backend are on
+// different sites, and Safari blocks third-party cookies outright
+// regardless of SameSite/Secure, so a cross-site session cookie never
+// survives on iOS. The token is stored here and sent on every request
+// instead, which doesn't depend on cookies at all.
+function getToken() {
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function setToken(token) {
+  try {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token)
+  } catch {
+    // localStorage unavailable (private mode, etc.) - auth just won't persist across reloads
+  }
+}
+
+function clearToken() {
+  try {
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+  } catch {
+    // ignore
+  }
+}
 
 // Helper function to make API requests
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`
+  const token = getToken()
   const config = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Token ${token}` } : {}),
       ...options.headers,
     },
-    credentials: 'include', // Include cookies for session
   }
 
   // Remove Content-Type for FormData
@@ -56,6 +87,9 @@ async function apiRequest(endpoint, options = {}) {
 
 // API functions
 export const api = {
+  hasToken: () => Boolean(getToken()),
+
+
   // Authentication
   registerPharmacy: (data) => apiRequest('/register/pharmacy/', {
     method: 'POST',
@@ -67,22 +101,34 @@ export const api = {
     body: JSON.stringify(data),
   }),
 
-  verifyRegistrationOTP: (email, otp) => apiRequest('/register/verify-otp/', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ email, otp }),
-}),
+  verifyRegistrationOTP: async (email, otp) => {
+    const data = await apiRequest('/register/verify-otp/', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, otp }),
+    })
+    if (data.token) setToken(data.token)
+    return data
+  },
 
-  login: (username, password) => apiRequest('/login/', {
-    method: 'POST',
-    body: JSON.stringify({ username, password }),
-  }),
+  login: async (username, password) => {
+    const data = await apiRequest('/login/', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    })
+    if (data.token) setToken(data.token)
+    return data
+  },
 
-  logout: () => apiRequest('/logout/', {
-    method: 'POST',
-  }),
+  logout: async () => {
+    try {
+      return await apiRequest('/logout/', { method: 'POST' })
+    } finally {
+      clearToken()
+    }
+  },
 
   getSession: async () => {
     try {
@@ -120,10 +166,11 @@ export const api = {
   updatePharmacyPhoto: (pharmacieId, photoFile) => {
     const formData = new FormData()
     formData.append('photo_profile', photoFile)
+    const token = getToken()
     return fetch(`${API_BASE_URL}/pharmacies/${pharmacieId}/update_photo/`, {
       method: 'PATCH',
       body: formData,
-      credentials: 'include',
+      headers: token ? { Authorization: `Token ${token}` } : {},
     }).then(res => res.json())
   },
 

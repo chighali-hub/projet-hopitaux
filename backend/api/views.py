@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.contrib.auth import get_user_model, authenticate, login
+from django.contrib.auth import get_user_model, authenticate
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import viewsets, status
@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authtoken.models import Token
 from .models import *
 from .serializers import *
 
@@ -32,88 +32,57 @@ class IsPharmacien(BasePermission):
         # Vérifier le rôle
         return hasattr(request.user, 'role') and request.user.role == 'pharmacien'
 
-def get_user_from_session(request):
+def get_user_from_token(request):
     """
-    Helper function to get user from session when authentication_classes = []
-    Returns (user, error_response) where error_response is None if user found
+    Authenticate via the 'Authorization: Token <key>' header.
+    Returns (user, error_response) where error_response is None if the
+    token is valid. Used by views that set authentication_classes = []
+    to allow public GET access on the same endpoint while still
+    requiring a valid token for the actions that call this.
     """
-    user = None
-    
-    # Ensure session is loaded (force session to be accessed)
-    if not hasattr(request, 'session'):
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Token '):
         return None, Response(
-            {'error': 'Non authentifié', 'message': 'Session non disponible'},
+            {'error': 'Non authentifié', 'message': 'Token manquant'},
             status=status.HTTP_401_UNAUTHORIZED
         )
-    
-    # Force session to be accessed (ensure it's loaded from storage)
-    # This ensures the session is properly loaded even with authentication_classes = []
+
+    key = auth_header[len('Token '):].strip()
     try:
-        _ = request.session.session_key  # Force session access
-    except AttributeError:
-        pass
-    
-    # Try to get user from session (most reliable)
-    user_id = request.session.get('user_id')
-    
-    # Fallback: try _auth_user_id (Django's default session key)
-    if not user_id and '_auth_user_id' in request.session:
-        user_id = request.session.get('_auth_user_id')
-    
-    if user_id:
-        try:
-            user = User.objects.get(id=user_id)
-            request.user = user  # Attach to request for compatibility
-            # If user_id was not in session, sync it for future requests
-            if not request.session.get('user_id'):
-                request.session['user_id'] = str(user.id)
-                request.session['username'] = user.username
-                request.session['role'] = user.role
-                request.session.modified = True
-                request.session.save()  # Force save to ensure session is persisted
-        except User.DoesNotExist:
-            return None, Response(
-                {'error': 'Non authentifié', 'message': 'Session invalide - utilisateur introuvable'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-    # Fallback: check request.user.is_authenticated
-    elif request.user and hasattr(request.user, 'is_authenticated') and request.user.is_authenticated:
-        user = request.user
-        # Sync session data for future requests
-        if not request.session.get('user_id'):
-            request.session['user_id'] = str(user.id)
-            request.session['username'] = user.username
-            request.session['role'] = user.role
-            request.session.modified = True
-            request.session.save()  # Force save to ensure session is persisted
-    
-    if not user:
+        token = Token.objects.select_related('user').get(key=key)
+    except Token.DoesNotExist:
         return None, Response(
-            {'error': 'Non authentifié', 'message': 'Aucune session active'},
+            {'error': 'Non authentifié', 'message': 'Token invalide'},
             status=status.HTTP_401_UNAUTHORIZED
         )
-    
-    # Verify user is pharmacien
-    user_role = None
-    if hasattr(user, 'role'):
-        user_role = str(user.role).strip().lower()
-    else:
-        session_role = request.session.get('role')
-        if session_role:
-            user_role = str(session_role).strip().lower()
-    
-    # Debug: Print role info
-    print(f"🔍 get_user_from_session - user.role: {getattr(user, 'role', 'N/A')}")
-    print(f"🔍 get_user_from_session - session role: {request.session.get('role') if hasattr(request, 'session') else 'N/A'}")
-    print(f"🔍 get_user_from_session - user_role (normalized): {user_role}")
-    
-    if user_role != 'pharmacien':
-        print(f"❌ get_user_from_session - Role check failed: user_role='{user_role}'")
+
+    request.user = token.user  # Attach to request for compatibility
+    return token.user, None
+
+
+def get_pharmacien_from_token(request):
+    """Same as get_user_from_token, but also requires the 'pharmacien' role."""
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return None, error_response
+    if user.role != 'pharmacien':
         return None, Response(
-            {'error': 'Accès refusé', 'message': f'Seuls les pharmaciens peuvent accéder à cette ressource (rôle actuel: {user_role or "non défini"})'},
+            {'error': 'Accès refusé', 'message': 'Seuls les pharmaciens peuvent accéder à cette ressource'},
             status=status.HTTP_403_FORBIDDEN
         )
-    
+    return user, None
+
+
+def get_client_from_token(request):
+    """Same as get_user_from_token, but also requires the 'client' role."""
+    user, error_response = get_user_from_token(request)
+    if error_response:
+        return None, error_response
+    if user.role != 'client':
+        return None, Response(
+            {'error': 'Accès refusé', 'message': 'Seuls les clients peuvent accéder à cette ressource'},
+            status=status.HTTP_403_FORBIDDEN
+        )
     return user, None
 
 # =========================
@@ -135,7 +104,7 @@ class PharmacieViewSet(viewsets.ModelViewSet):
     def my_pharmacy(self, request):
         """Get current user's pharmacy"""
         # Load user from session
-        user, error_response = get_user_from_session(request)
+        user, error_response = get_pharmacien_from_token(request)
         if error_response:
             return error_response
         
@@ -150,7 +119,7 @@ class PharmacieViewSet(viewsets.ModelViewSet):
     def update_photo(self, request, pk=None):
         """Update pharmacy profile photo"""
         # Load user from session
-        user, error_response = get_user_from_session(request)
+        user, error_response = get_pharmacien_from_token(request)
         if error_response:
             return error_response
         
@@ -171,7 +140,7 @@ class PharmacieViewSet(viewsets.ModelViewSet):
     def set_open_status(self, request):
         """Update pharmacy open/closed status"""
         # Load user from session
-        user, error_response = get_user_from_session(request)
+        user, error_response = get_pharmacien_from_token(request)
         if error_response:
             return error_response
         
@@ -241,20 +210,10 @@ class MedicamentViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Create medicine and add to pharmacy stock"""
-        # Debug: Print session info
-        print(f"🔍 CREATE - Session key: {request.session.session_key if hasattr(request, 'session') else 'No session'}")
-        print(f"🔍 CREATE - Session user_id: {request.session.get('user_id') if hasattr(request, 'session') else 'N/A'}")
-        print(f"🔍 CREATE - Session role: {request.session.get('role') if hasattr(request, 'session') else 'N/A'}")
-        print(f"🔍 CREATE - _auth_user_id: {request.session.get('_auth_user_id') if hasattr(request, 'session') else 'N/A'}")
-        
-        # Load user from session
-        user, error_response = get_user_from_session(request)
+        user, error_response = get_pharmacien_from_token(request)
         if error_response:
-            print(f"❌ CREATE - get_user_from_session failed: {error_response.data if hasattr(error_response, 'data') else error_response}")
             return error_response
-        
-        print(f"✅ CREATE - User found: {user.username} (role: {user.role})")
-        
+
         # Get pharmacy
         try:
             pharmacie = Pharmacie.objects.get(user=user)
@@ -319,29 +278,15 @@ class MedicamentViewSet(viewsets.ModelViewSet):
                     stock=stock
                 )
         
-        # Ensure session is saved before returning response
-        if hasattr(request, 'session') and request.session.modified:
-            request.session.save()
-        
         serializer = self.get_serializer(medicament)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     def update(self, request, *args, **kwargs):
         """Update medicine and stock"""
-        # Debug: Print session info
-        print(f"🔍 UPDATE - Session key: {request.session.session_key if hasattr(request, 'session') else 'No session'}")
-        print(f"🔍 UPDATE - Session user_id: {request.session.get('user_id') if hasattr(request, 'session') else 'N/A'}")
-        print(f"🔍 UPDATE - Session role: {request.session.get('role') if hasattr(request, 'session') else 'N/A'}")
-        print(f"🔍 UPDATE - _auth_user_id: {request.session.get('_auth_user_id') if hasattr(request, 'session') else 'N/A'}")
-        
-        # Load user from session
-        user, error_response = get_user_from_session(request)
+        user, error_response = get_pharmacien_from_token(request)
         if error_response:
-            print(f"❌ UPDATE - get_user_from_session failed: {error_response.data if hasattr(error_response, 'data') else error_response}")
             return error_response
-        
-        print(f"✅ UPDATE - User found: {user.username} (role: {user.role})")
-        
+
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         
@@ -368,16 +313,12 @@ class MedicamentViewSet(viewsets.ModelViewSet):
                 stock.prix = float(request.data['prix'])
             stock.save()
         
-        # Ensure session is saved before returning response
-        if hasattr(request, 'session') and request.session.modified:
-            request.session.save()
-        
         return Response(serializer.data)
-    
+
     def destroy(self, request, *args, **kwargs):
         """Delete medicine from pharmacy stock"""
         # Load user from session
-        user, error_response = get_user_from_session(request)
+        user, error_response = get_pharmacien_from_token(request)
         if error_response:
             return error_response
         
@@ -408,7 +349,7 @@ class MedicamentViewSet(viewsets.ModelViewSet):
     def my_stock(self, request):
         """Get current pharmacy's stock"""
         # Load user from session
-        user, error_response = get_user_from_session(request)
+        user, error_response = get_pharmacien_from_token(request)
         if error_response:
             return error_response
         
@@ -643,31 +584,12 @@ class VerifyOTPView(APIView):
             if serializer.is_valid():
                 pharmacie = serializer.save()
                 user = pharmacie.user
-                
-                # Setup session
-                if not request.session.exists(request.session.session_key):
-                    request.session.create()
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                
-                request.session['user_id'] = str(user.id)
-                request.session['username'] = user.username
-                request.session['role'] = user.role
-                request.session['id_pharmacie'] = str(pharmacie.id)
-                request.session['nom'] = pharmacie.nom
-                request.session['email'] = pharmacie.email
-                request.session['has_location'] = bool(pharmacie.localisation)
-                
-                request.session.modified = True
-                request.session.save()
-                
-                if not request.user.is_authenticated:
-                    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                    request.session.save()
-                
+                token, _ = Token.objects.get_or_create(user=user)
                 pending.delete()
-                
+
                 return Response({
                     "message": "Pharmacie créée avec succès",
+                    "token": token.key,
                     "pharmacie_id": pharmacie.id,
                     "user_id": user.id,
                     "role": "pharmacien",
@@ -675,32 +597,19 @@ class VerifyOTPView(APIView):
                     "nom": pharmacie.nom,
                     "email": pharmacie.email,
                     "has_location": bool(pharmacie.localisation),
-                    "authenticated": request.user.is_authenticated,
-                    "session_key": request.session.session_key,
                 }, status=status.HTTP_201_CREATED)
-                
+
         elif pending.role == 'client':
             serializer = ClientRegisterSerializer(data=pending.registration_data)
             if serializer.is_valid():
                 client = serializer.save()
                 user = client.user
-                
-                if not request.session.exists(request.session.session_key):
-                    request.session.create()
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                
-                request.session['user_id'] = str(user.id)
-                request.session['username'] = user.username
-                request.session['role'] = user.role
-                request.session['id_client'] = str(client.id)
-                
-                request.session.modified = True
-                request.session.save()
-                
+                token, _ = Token.objects.get_or_create(user=user)
                 pending.delete()
-                
+
                 return Response({
                     "message": "Client créé avec succès",
+                    "token": token.key,
                     "client_id": client.id,
                     "user_id": user.id,
                     "role": "client",
@@ -741,33 +650,15 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         
+        token, _ = Token.objects.get_or_create(user=user)
+
         # Check if user is Pharmacie
         if user.role == 'pharmacien':
             try:
                 pharmacie = Pharmacie.objects.get(user=user)
-                
-                # CRITICAL: Ensure session exists before login
-                if not request.session.exists(request.session.session_key):
-                    request.session.create()
-                
-                # CRITICAL: Authenticate user for Django session (required for IsAuthenticated)
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                
-                # Store session data
-                request.session['user_id'] = str(user.id)
-                request.session['username'] = user.username
-                request.session['role'] = user.role
-                request.session['id_pharmacie'] = str(pharmacie.id)
-                request.session['nom'] = pharmacie.nom
-                request.session['email'] = pharmacie.email
-                request.session['has_location'] = bool(pharmacie.localisation)
-                
-                # Force session to be marked as modified (ensures cookie is sent)
-                request.session.modified = True
-                request.session.save()
-                
                 return Response({
                     'message': 'Connexion réussie',
+                    'token': token.key,
                     'role': 'pharmacien',
                     'user_id': user.id,
                     'pharmacie_id': pharmacie.id,
@@ -778,29 +669,17 @@ class LoginView(APIView):
                 }, status=status.HTTP_200_OK)
             except Pharmacie.DoesNotExist:
                 return Response(
-                    {'error': 'Pharmacie non trouvée'}, 
+                    {'error': 'Pharmacie non trouvée'},
                     status=status.HTTP_404_NOT_FOUND
                 )
-        
+
         # Check if user is Client
         elif user.role == 'client':
             try:
                 client = Client.objects.get(user=user)
-                # CRITICAL: Authenticate user for Django session (required for IsAuthenticated)
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-                
-                # Store session data
-                request.session['user_id'] = str(user.id)
-                request.session['username'] = user.username
-                request.session['role'] = user.role
-                request.session['id_client'] = str(client.id)
-                
-                # Force session to be marked as modified (ensures cookie is sent)
-                request.session.modified = True
-                request.session.save()
-                
                 return Response({
                     'message': 'Connexion réussie',
+                    'token': token.key,
                     'role': 'client',
                     'user_id': user.id,
                     'client_id': client.id,
@@ -808,7 +687,7 @@ class LoginView(APIView):
                 }, status=status.HTTP_200_OK)
             except Client.DoesNotExist:
                 return Response(
-                    {'error': 'Client non trouvé'}, 
+                    {'error': 'Client non trouvé'},
                     status=status.HTTP_404_NOT_FOUND
                 )
         
@@ -820,176 +699,78 @@ class LoginView(APIView):
 class LogoutView(APIView):
     permission_classes = [AllowAny]  # Allow logout even if not authenticated
     authentication_classes = []
-    
+
     @method_decorator(csrf_exempt)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
-    
+
     def post(self, request):
-        request.session.flush()
+        user, error_response = get_user_from_token(request)
+        if user:
+            Token.objects.filter(user=user).delete()
         return Response({'message': 'Déconnexion réussie'}, status=status.HTTP_200_OK)
 
 class SessionView(APIView):
     permission_classes = [AllowAny]  # Allow checking session without authentication
     authentication_classes = []
-    
+
     @method_decorator(csrf_exempt)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
-    
+
     def get(self, request):
-        """Get current session data"""
-        # Ensure session is loaded (force session to be accessed)
-        if not hasattr(request, 'session'):
-            return Response({'error': 'Session non disponible'}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        # Force session to be accessed (ensure it's loaded from storage)
-        try:
-            _ = request.session.session_key  # Force session access
-        except AttributeError:
-            pass
-        
-        # Load user from session (check session first, not request.user.is_authenticated)
-        user = None
-        user_id = request.session.get('user_id')
-        
-        # Fallback: try _auth_user_id (Django's default session key)
-        if not user_id and '_auth_user_id' in request.session:
-            user_id = request.session.get('_auth_user_id')
-        
-        if user_id:
-            try:
-                user = User.objects.get(id=user_id)
-                request.user = user  # Attach to request for compatibility
-                # If user_id was not in session, sync it for future requests
-                if not request.session.get('user_id'):
-                    request.session['user_id'] = str(user.id)
-                    request.session['username'] = user.username
-                    request.session['role'] = user.role
-                    request.session.modified = True
-                    request.session.save()  # Force save to ensure session is persisted
-            except User.DoesNotExist:
-                # User not found in database, session is invalid
-                request.session.flush()
-                return Response({'error': 'Utilisateur introuvable'}, status=status.HTTP_401_UNAUTHORIZED)
-        # Fallback: check request.user.is_authenticated (if middleware Django loaded user)
-        elif request.user and hasattr(request.user, 'is_authenticated') and request.user.is_authenticated:
-            user = request.user
-            # Sync session data for future requests
-            if not request.session.get('user_id'):
-                request.session['user_id'] = str(user.id)
-                request.session['username'] = user.username
-                request.session['role'] = user.role
-                request.session.modified = True
-                request.session.save()  # Force save to ensure session is persisted
-        
-        # If no user found, return 401
-        if not user:
-            return Response({'error': 'Aucune session active'}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        # Get role from user object (source of truth) or session
-        user_role = None
-        if hasattr(user, 'role'):
-            user_role = str(user.role).strip().lower()
-        else:
-            session_role = request.session.get('role')
-            if session_role:
-                user_role = str(session_role).strip().lower()
-        
-        # Debug: Print role info
-        print(f"🔍 SessionView - user.id: {user.id}")
-        print(f"🔍 SessionView - user.role (raw): {getattr(user, 'role', 'N/A')}")
-        print(f"🔍 SessionView - session role: {request.session.get('role')}")
-        print(f"🔍 SessionView - user_role (normalized): {user_role}")
-        
+        """Return who the token belongs to, and their role-specific profile."""
+        user, error_response = get_user_from_token(request)
+        if error_response:
+            return error_response
+
         session_data = {
-            'user_id': request.session.get('user_id') or user.id,
-            'username': request.session.get('username') or user.username,
-            'role': user_role or request.session.get('role'),
+            'user_id': user.id,
+            'username': user.username,
         }
-        
-        # Use user_role (from user object) as source of truth, not session
-        # First, check which profile exists in database (source of truth)
-        pharmacie_exists = Pharmacie.objects.filter(user=user).exists()
-        client_exists = Client.objects.filter(user=user).exists()
-        
-        print(f"🔍 SessionView - Pharmacie exists: {pharmacie_exists}, Client exists: {client_exists}")
-        print(f"🔍 SessionView - user_role from code above: {user_role}")
-        
-        # Determine role based on database (source of truth), not just user_role variable
-        if pharmacie_exists:
-            # User is a pharmacien (database confirms it)
-            if user_role != 'pharmacien':
-                # Sync role in session if it's incorrect
-                print(f"⚠️ SessionView - Role mismatch: user.role says '{user_role}' but Pharmacie exists. Syncing...")
-                user_role = 'pharmacien'
-                request.session['role'] = 'pharmacien'
-                request.session.modified = True
-                request.session.save()
-            try:
-                pharmacie = Pharmacie.objects.get(user=user)
-                session_data['id_pharmacie'] = pharmacie.id
-                session_data['nom'] = pharmacie.nom
-                session_data['email'] = pharmacie.email
-                session_data['has_location'] = bool(pharmacie.localisation)
-                session_data['role'] = 'pharmacien'  # Ensure role is set correctly
-            except Pharmacie.DoesNotExist:
-                return Response({'error': 'Pharmacie non trouvée'}, status=status.HTTP_404_NOT_FOUND)
-        elif client_exists:
-            # User is a client (database confirms it)
-            if user_role != 'client':
-                # Sync role in session if it's incorrect
-                print(f"⚠️ SessionView - Role mismatch: user.role says '{user_role}' but Client exists. Syncing...")
-                user_role = 'client'
-                request.session['role'] = 'client'
-                request.session.modified = True
-                request.session.save()
-            try:
-                client = Client.objects.get(user=user)
-                session_data['id_client'] = client.id
-                session_data['role'] = 'client'  # Ensure role is set correctly
-            except Client.DoesNotExist:
-                return Response({'error': 'Client non trouvé'}, status=status.HTTP_404_NOT_FOUND)
-        elif user_role == 'pharmacien':
-            # Fallback: use user_role if database check fails
-            try:
-                pharmacie = Pharmacie.objects.get(user=user)
-                session_data['id_pharmacie'] = pharmacie.id
-                session_data['nom'] = pharmacie.nom
-                session_data['email'] = pharmacie.email
-                session_data['has_location'] = bool(pharmacie.localisation)
-            except Pharmacie.DoesNotExist:
-                return Response({'error': 'Pharmacie non trouvée'}, status=status.HTTP_404_NOT_FOUND)
-        elif user_role == 'client':
-            # Fallback: use user_role if database check fails
-            try:
-                client = Client.objects.get(user=user)
-                session_data['id_client'] = client.id
-            except Client.DoesNotExist:
-                return Response({'error': 'Client non trouvé'}, status=status.HTTP_404_NOT_FOUND)
-        
-        return Response(session_data)
+
+        # The database is the source of truth for the role, not the token.
+        try:
+            pharmacie = Pharmacie.objects.get(user=user)
+            session_data.update({
+                'role': 'pharmacien',
+                'id_pharmacie': pharmacie.id,
+                'nom': pharmacie.nom,
+                'email': pharmacie.email,
+                'has_location': bool(pharmacie.localisation),
+            })
+            return Response(session_data)
+        except Pharmacie.DoesNotExist:
+            pass
+
+        try:
+            client = Client.objects.get(user=user)
+            session_data.update({
+                'role': 'client',
+                'id_client': client.id,
+            })
+            return Response(session_data)
+        except Client.DoesNotExist:
+            pass
+
+        return Response({'error': 'Aucun profil pharmacie ou client associé à ce compte'}, status=status.HTTP_404_NOT_FOUND)
 
 class LocationUpdateView(APIView):
     """
     Vue pour mettre à jour la localisation d'une pharmacie.
-    Exige une authentification valide et le rôle 'pharmacien'.
-    Note: csrf_exempt est utilisé car DRF SessionAuthentication gère la sécurité différemment.
+    Exige une authentification valide (token) et le rôle 'pharmacien'.
     """
-    # Utiliser AllowAny et vérifier manuellement pour gérer correctement les sessions
     permission_classes = [AllowAny]
-    # Désactiver l'authentification DRF standard pour éviter les problèmes CSRF
-    # On gère l'authentification manuellement via la session
     authentication_classes = []
-    
+
     @method_decorator(csrf_exempt)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
-    
+
     def post(self, request):
         """
         Met à jour la localisation de la pharmacie de l'utilisateur connecté.
-        
+
         Retourne:
         - 401 si l'utilisateur n'est pas authentifié
         - 403 si l'utilisateur n'est pas pharmacien
@@ -997,107 +778,10 @@ class LocationUpdateView(APIView):
         - 400 si les coordonnées sont invalides ou manquantes
         - 200 si la mise à jour réussit
         """
-        
-        # DEBUG: Logs détaillés pour diagnostiquer le problème 403
-        print("=" * 80)
-        print("🔍 LocationUpdateView.post() - DEBUG COMPLET")
-        print(f"Has session attr: {hasattr(request, 'session')}")
-        if hasattr(request, 'session'):
-            print(f"Session key: {request.session.session_key}")
-            print(f"Session user_id: {request.session.get('user_id')}")
-            print(f"Session role: {request.session.get('role')}")
-            print(f"Session username: {request.session.get('username')}")
-            print(f"All session keys: {list(request.session.keys())}")
-        print(f"request.user: {request.user}")
-        print(f"request.user type: {type(request.user)}")
-        print(f"request.user.is_authenticated: {getattr(request.user, 'is_authenticated', False) if request.user else 'N/A'}")
-        print("=" * 80)
-        
-        # ÉTAPE 1: Récupérer l'utilisateur depuis la session
-        # La session est la source de vérité car on stocke explicitement user_id lors du login/register
-        user = None
-        
-        # Vérifier d'abord si la session existe et contient user_id (méthode la plus fiable)
-        # Le middleware SessionMiddleware charge automatiquement la session depuis le cookie
-        if hasattr(request, 'session'):
-            # S'assurer que la session est bien chargée (créer si nécessaire mais ne pas forcer)
-            if not request.session.session_key:
-                # Si pas de session_key, la session n'a pas été chargée depuis le cookie
-                # Cela signifie que le cookie de session n'est pas présent ou invalide
-                print("❌ Pas de session_key - cookie de session manquant")
-                return Response(
-                    {'error': 'Non authentifié', 'message': 'Aucune session active - cookie de session manquant'}, 
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-            
-            user_id = request.session.get('user_id')
-            print(f"🔍 user_id depuis session: {user_id}")
-            if user_id:
-                try:
-                    user = User.objects.get(id=user_id)
-                    # Forcer l'attachement de l'utilisateur à la requête pour compatibilité
-                    request.user = user
-                    print(f"✅ Utilisateur trouvé: {user.username} (role: {user.role})")
-                except User.DoesNotExist:
-                    print(f"❌ Utilisateur ID {user_id} introuvable en base")
-                    return Response(
-                        {'error': 'Non authentifié', 'message': 'Session invalide - utilisateur introuvable'}, 
-                        status=status.HTTP_401_UNAUTHORIZED
-                    )
-        
-        # Fallback: vérifier request.user.is_authenticated (si middleware Django a chargé l'utilisateur)
-        # Ceci utilise _auth_user_id stocké par login(), mais on préfère user_id de la session
-        if not user and request.user and hasattr(request.user, 'is_authenticated') and request.user.is_authenticated:
-            user = request.user
-            print(f"✅ Utilisateur récupéré via request.user: {user.username} (role: {user.role})")
-        
-        # Si aucun utilisateur trouvé, retourner 401
-        if not user:
-            print("❌ Aucun utilisateur trouvé")
-            return Response(
-                {'error': 'Non authentifié', 'message': 'Aucune session active'}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
-        # ÉTAPE 2: Vérifier que l'utilisateur a le rôle 'pharmacien'
-        # Vérifier d'abord via l'attribut role de l'utilisateur (source de vérité en base de données)
-        is_pharmacien = False
-        user_role = None
-        session_role = None
-        
-        if hasattr(user, 'role'):
-            # Normaliser le rôle (enlever espaces, convertir en minuscules)
-            user_role = str(user.role).strip().lower()
-            print(f"🔍 Rôle utilisateur: '{user.role}' (brut) -> '{user_role}' (normalisé)")
-            if user_role == 'pharmacien':
-                is_pharmacien = True
-                print("✅ Rôle pharmacien confirmé via user.role")
-        
-        # Fallback: vérifier via la session si user.role n'est pas disponible ou ne correspond pas
-        if not is_pharmacien and hasattr(request, 'session'):
-            session_role = request.session.get('role')
-            if session_role:
-                session_role_normalized = str(session_role).strip().lower()
-                print(f"🔍 Rôle session: '{session_role}' (brut) -> '{session_role_normalized}' (normalisé)")
-                if session_role_normalized == 'pharmacien':
-                    is_pharmacien = True
-                    print("✅ Rôle pharmacien confirmé via session.role")
-        
-        # Si l'utilisateur n'est pas pharmacien, retourner 403
-        if not is_pharmacien:
-            print(f"❌ RÔLE INVALIDE - user.role='{user_role}', session.role='{session_role}'")
-            print(f"   user.role type: {type(getattr(user, 'role', None))}")
-            print(f"   user.role value: {repr(getattr(user, 'role', None))}")
-            return Response(
-                {
-                    'error': 'Accès refusé',
-                    'message': 'Seuls les pharmaciens peuvent mettre à jour leur localisation'
-                }, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        print("✅ Authentification et rôle validés avec succès")
-        
+        user, error_response = get_pharmacien_from_token(request)
+        if error_response:
+            return error_response
+
         # ÉTAPE 3: Récupérer la pharmacie associée à l'utilisateur
         try:
             pharmacie = Pharmacie.objects.get(user=user)
@@ -1159,11 +843,7 @@ class LocationUpdateView(APIView):
         try:
             pharmacie.localisation = f"{lat},{lon}"
             pharmacie.save()
-            
-            # Mettre à jour la session pour refléter le changement
-            request.session['has_location'] = True
-            request.session.save()
-            
+
             return Response({
                 'message': 'Localisation enregistrée avec succès',
                 'localisation': pharmacie.localisation,
@@ -1196,29 +876,18 @@ class MedicineNotificationRequestView(APIView):
     
     def post(self, request):
         """Create a notification request for a medicine"""
-        # Get user from session
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return Response(
-                {'error': 'Non authentifié'}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
+        user, error_response = get_client_from_token(request)
+        if error_response:
+            return error_response
+
         try:
-            user = User.objects.get(id=user_id)
-            if user.role != 'client':
-                return Response(
-                    {'error': 'Seuls les clients peuvent créer des demandes de notification'}, 
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            
             client = Client.objects.get(user=user)
-        except (User.DoesNotExist, Client.DoesNotExist):
+        except Client.DoesNotExist:
             return Response(
-                {'error': 'Client non trouvé'}, 
+                {'error': 'Client non trouvé'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         medicine_name = request.data.get('medicine_name', '').strip()
         if not medicine_name:
             return Response(
@@ -1256,29 +925,18 @@ class MedicineNotificationListView(APIView):
     
     def get(self, request):
         """Get all notifications for the current client"""
-        # Get user from session
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return Response(
-                {'error': 'Non authentifié'}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
+        user, error_response = get_client_from_token(request)
+        if error_response:
+            return error_response
+
         try:
-            user = User.objects.get(id=user_id)
-            if user.role != 'client':
-                return Response(
-                    {'error': 'Seuls les clients peuvent voir leurs notifications'}, 
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            
             client = Client.objects.get(user=user)
-        except (User.DoesNotExist, Client.DoesNotExist):
+        except Client.DoesNotExist:
             return Response(
-                {'error': 'Client non trouvé'}, 
+                {'error': 'Client non trouvé'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         notifications = MedicineNotification.objects.filter(client=client).order_by('-created_at')
         
         # Check for unread count
@@ -1305,22 +963,17 @@ class MedicineNotificationMarkReadView(APIView):
     
     def patch(self, request, notification_id):
         """Mark a notification as read"""
-        # Get user from session
-        user_id = request.session.get('user_id')
-        if not user_id:
-            return Response(
-                {'error': 'Non authentifié'}, 
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-        
+        user, error_response = get_client_from_token(request)
+        if error_response:
+            return error_response
+
         try:
-            user = User.objects.get(id=user_id)
             client = Client.objects.get(user=user)
             notification = MedicineNotification.objects.get(id=notification_id, client=client)
             notification.is_read = True
             notification.save()
             return Response({'message': 'Notification marquée comme lue'})
-        except (User.DoesNotExist, Client.DoesNotExist, MedicineNotification.DoesNotExist):
+        except (Client.DoesNotExist, MedicineNotification.DoesNotExist):
             return Response(
                 {'error': 'Notification non trouvée'}, 
                 status=status.HTTP_404_NOT_FOUND
@@ -1340,7 +993,7 @@ class PharmacyNotificationRequestsView(APIView):
     def get(self, request):
         """Get all active medicine notification requests grouped by medicine name"""
         # Load user from session
-        user, error_response = get_user_from_session(request)
+        user, error_response = get_pharmacien_from_token(request)
         if error_response:
             return error_response
         
